@@ -27,12 +27,7 @@ jobs:
           node-version: 20
 
       - name: Install
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        run: npm install
 
       - name: Build static export
         run: npm run build
