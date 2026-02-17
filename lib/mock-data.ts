@@ -1,4 +1,4 @@
-import type { CreativeBrief, IdeaCard, LearningInsight, ScoredPackage } from "@/lib/types";
+import type { CreativeBrief, EmptyViewsAssessment, IdeaCard, LearningInsight, ScoredPackage } from "@/lib/types";
 
 const randomId = () => Math.random().toString(36).slice(2, 10);
 
@@ -183,4 +183,64 @@ export function ingestLearning(videoUrl: string, notes?: string): LearningInsigh
       actionForNextVideo: "Reuse best-performing language pattern from this upload."
     }
   ];
+}
+
+export function assessEmptyViewsRisk(
+  scoredPackage: ScoredPackage | null,
+  first15sHook: string,
+  questionChain: string[]
+): EmptyViewsAssessment {
+  if (!scoredPackage) {
+    return {
+      riskScore: 8.2,
+      riskLabel: "High",
+      reasons: ["No validated package selected yet."],
+      fixes: ["Score packaging first before production."]
+    };
+  }
+
+  const reasons: string[] = [];
+  const fixes: string[] = [];
+  let risk = 5;
+
+  if (scoredPackage.score.clickPotential >= 8 && scoredPackage.score.giveMore <= 6) {
+    risk += 2.2;
+    reasons.push("High click potential but weaker value payoff can attract low-quality clicks.");
+    fixes.push("Add concrete payoff language: numbers, proof, or before/after outcome.");
+  }
+
+  if (scoredPackage.score.respectTime <= 6) {
+    risk += 1.4;
+    reasons.push("Packaging suggests slower value delivery.");
+    fixes.push("Shorten and sharpen title angle to communicate immediate value.");
+  }
+
+  if (first15sHook.trim().length < 25) {
+    risk += 1.2;
+    reasons.push("First 15-second hook is too vague/short.");
+    fixes.push("Write a specific downside + promised result in first 15 seconds.");
+  }
+
+  if (questionChain.length < 4) {
+    risk += 1.1;
+    reasons.push("Question chain is underdeveloped, risking early story drop-off.");
+    fixes.push("Use at least 4-5 question steps with delayed answers.");
+  }
+
+  const hasProofQuestion = questionChain.some((q) => /proof|result|measure|data/i.test(q));
+  if (!hasProofQuestion) {
+    risk += 0.9;
+    reasons.push("Question chain lacks explicit proof checkpoint.");
+    fixes.push("Add a proof-focused question (e.g., what measurable result proves this works?).");
+  }
+
+  const riskScore = Number(Math.max(0, Math.min(10, risk)).toFixed(1));
+  const riskLabel: "Low" | "Medium" | "High" = riskScore >= 7.5 ? "High" : riskScore >= 5 ? "Medium" : "Low";
+
+  if (reasons.length === 0) {
+    reasons.push("Packaging and structure are balanced for durable audience quality.");
+    fixes.push("Keep question chain and first-15s hook aligned with final payoff.");
+  }
+
+  return { riskScore, riskLabel, reasons, fixes };
 }

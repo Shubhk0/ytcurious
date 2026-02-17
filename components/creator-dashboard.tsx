@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { generateBriefInBrowser, generateIdeaTitlesInBrowser, isBrowserAISupported, warmupBrowserAI } from "@/lib/browser-ai";
 import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
 import {
+  assessEmptyViewsRisk,
   buildQuestionChain,
   generateBrief,
   generateIdeaCards,
@@ -11,7 +12,7 @@ import {
   ingestLearning,
   scorePackaging
 } from "@/lib/mock-data";
-import type { CreativeBrief, IdeaCard, LearningInsight, ScoredPackage, WorkspaceSnapshot } from "@/lib/types";
+import type { CreativeBrief, EmptyViewsAssessment, IdeaCard, LearningInsight, ScoredPackage, WorkspaceSnapshot } from "@/lib/types";
 import { listWorkspaceSnapshots, saveWorkspaceSnapshot } from "@/lib/workspace-storage";
 
 export function CreatorDashboard() {
@@ -74,6 +75,11 @@ export function CreatorDashboard() {
       setLoading(null);
     }
   };
+
+  const emptyViewsAssessment: EmptyViewsAssessment = useMemo(
+    () => assessEmptyViewsRisk(packages[0] ?? null, preFirst15sHook, questionChain),
+    [packages, preFirst15sHook, questionChain]
+  );
 
   useEffect(() => {
     void run("load snapshots", async () => {
@@ -344,6 +350,35 @@ export function CreatorDashboard() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="panel">
+        <h2 className="text-lg font-semibold">3.5 Empty Views Risk</h2>
+        <div className="mt-3 flex items-center gap-3">
+          <span
+            className={`rounded px-3 py-1 text-sm font-semibold ${
+              emptyViewsAssessment.riskLabel === "High"
+                ? "bg-red-100 text-red-800"
+                : emptyViewsAssessment.riskLabel === "Medium"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-emerald-100 text-emerald-800"
+            }`}
+          >
+            {emptyViewsAssessment.riskLabel} Risk ({emptyViewsAssessment.riskScore}/10)
+          </span>
+        </div>
+        <p className="mt-3 text-sm font-medium">Why this score</p>
+        <ul className="mt-1 list-disc pl-5 text-sm">
+          {emptyViewsAssessment.reasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm font-medium">How to reduce risk</p>
+        <ul className="mt-1 list-disc pl-5 text-sm">
+          {emptyViewsAssessment.fixes.map((fix) => (
+            <li key={fix}>{fix}</li>
+          ))}
+        </ul>
       </section>
 
       <section className="panel">

@@ -54,6 +54,13 @@ export type LearningInsight = {
   actionForNextVideo: string;
 };
 
+export type EmptyViewsAssessment = {
+  riskScore: number;
+  riskLabel: "Low" | "Medium" | "High";
+  reasons: string[];
+  fixes: string[];
+};
+
 export type WorkspaceSnapshotPayload = {
   channelId: string;
   niche: string;

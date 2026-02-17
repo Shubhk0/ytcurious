@@ -84,6 +84,8 @@ This is reflected in `clickPotential`, `respectTime`, `giveMore`, and `curiosity
   - Build a sequence of viewer questions to preserve curiosity through the video.
 - **Retention Beat Checks**
   - Brief now auto-generates time-based checkpoints from target duration.
+- **Empty Views Risk Meter**
+  - Flags click-heavy but low-payoff concepts and recommends fixes before production.
 
 ## Free storage on GitHub Pages (no keys required)
 This app supports cloud persistence using JustJSON (free, no signup) and automatically falls back to browser localStorage if the API is unavailable.
