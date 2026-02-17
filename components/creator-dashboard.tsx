@@ -144,11 +144,11 @@ export function CreatorDashboard() {
   };
 
   return (
-    <div className="dashboard-grid">
+    <div className="dashboard-grid pb-8">
       <section className="panel">
         <h2 className="text-lg font-semibold">1. Channel Sync</h2>
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <label className="flex min-w-72 flex-col gap-1">
+        <div className="mt-3 grid gap-3 md:flex md:flex-wrap md:items-end">
+          <label className="flex w-full flex-col gap-1 md:min-w-72 md:flex-1">
             <span className="text-sm">Channel ID</span>
             <input
               value={channelId}
@@ -157,7 +157,7 @@ export function CreatorDashboard() {
             />
           </label>
           <button
-            className="btn-primary"
+            className="btn-primary w-full md:w-auto"
             disabled={!!loading}
             onClick={() =>
               run("sync", async () => {
@@ -176,13 +176,13 @@ export function CreatorDashboard() {
 
       <section className="panel">
         <h2 className="text-lg font-semibold">2. Idea Engine</h2>
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <label className="flex min-w-72 flex-col gap-1">
+        <div className="mt-3 grid gap-3 md:flex md:flex-wrap md:items-end">
+          <label className="flex w-full flex-col gap-1 md:min-w-72 md:flex-1">
             <span className="text-sm">Niche</span>
             <input value={niche} onChange={(e) => setNiche(e.target.value)} className="input-base" />
           </label>
           <button
-            className="btn-primary"
+            className="btn-primary w-full md:w-auto"
             disabled={!!loading}
             onClick={() =>
               run("ideas", async () => {
@@ -200,7 +200,7 @@ export function CreatorDashboard() {
             Generate Ideas
           </button>
           <button
-            className="btn-secondary text-sm"
+            className="btn-secondary w-full text-sm md:w-auto"
             disabled={!!loading || !browserAISupported}
             onClick={() =>
               run("browser ai warmup", async () => {
@@ -213,7 +213,7 @@ export function CreatorDashboard() {
             Warmup Browser AI
           </button>
           <button
-            className="btn-secondary"
+            className="btn-secondary w-full md:w-auto"
             disabled={!!loading || !browserAISupported}
             onClick={() =>
               run("browser ai ideas", async () => {
@@ -301,7 +301,7 @@ export function CreatorDashboard() {
           </label>
           <div className="flex items-end">
             <button
-              className="btn-secondary text-sm"
+              className="btn-secondary w-full text-sm md:w-auto"
               disabled={!selectedIdea || !!loading}
               onClick={() =>
                 run("question chain", async () => {
@@ -333,7 +333,7 @@ export function CreatorDashboard() {
           <p>3) Give more value than expected to build durable audience.</p>
         </div>
         <button
-          className="btn-primary mt-3"
+          className="btn-primary mt-3 w-full md:w-auto"
           disabled={!!loading || !selectedIdea}
           onClick={() =>
             run("packaging", async () => {
@@ -371,7 +371,7 @@ export function CreatorDashboard() {
 
       <section className="panel">
         <h2 className="text-lg font-semibold">3.5 Empty Views Risk</h2>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 grid gap-2 md:flex md:items-center md:gap-3">
           <span
             className={`rounded px-3 py-1 text-sm font-semibold ${
               emptyViewsAssessment.riskLabel === "High"
@@ -384,7 +384,7 @@ export function CreatorDashboard() {
             {emptyViewsAssessment.riskLabel} Risk ({emptyViewsAssessment.riskScore}/10)
           </span>
           <button
-            className="btn-secondary text-sm"
+            className="btn-secondary w-full text-sm md:w-auto"
             disabled={!selectedIdea || !!loading}
             onClick={() =>
               run("apply risk fixes", async () => {
@@ -426,7 +426,7 @@ export function CreatorDashboard() {
             Apply Fixes
           </button>
           <button
-            className="btn-secondary text-sm"
+            className="btn-secondary w-full text-sm md:w-auto"
             disabled={!packages[0] || !!loading}
             onClick={() =>
               run("save winning package", async () => {
@@ -472,7 +472,7 @@ export function CreatorDashboard() {
       <section className="panel">
         <h2 className="text-lg font-semibold">4. Creative Brief</h2>
         <button
-          className="btn-primary mt-3"
+          className="btn-primary mt-3 w-full md:w-auto"
           disabled={!!loading || !selectedIdea || packages.length === 0}
           onClick={() =>
             run("brief", async () => {
@@ -493,7 +493,7 @@ export function CreatorDashboard() {
           Generate Brief
         </button>
         <button
-          className="btn-secondary ml-3 mt-3"
+          className="btn-secondary mt-3 w-full md:ml-3 md:w-auto"
           disabled={!!loading || !selectedIdea || packages.length === 0 || !browserAISupported}
           onClick={() =>
             run("browser ai brief", async () => {
@@ -543,8 +543,8 @@ export function CreatorDashboard() {
 
       <section className="panel">
         <h2 className="text-lg font-semibold">5. Learning Loop</h2>
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <label className="flex min-w-96 flex-col gap-1">
+        <div className="mt-3 grid gap-3 md:flex md:flex-wrap md:items-end">
+          <label className="flex w-full flex-col gap-1 md:min-w-96 md:flex-1">
             <span className="text-sm">Published video URL</span>
             <input
               value={videoUrl}
@@ -553,7 +553,7 @@ export function CreatorDashboard() {
             />
           </label>
           <button
-            className="btn-primary"
+            className="btn-primary w-full md:w-auto"
             disabled={!!loading}
             onClick={() =>
               run("learning", async () => {
@@ -595,7 +595,7 @@ export function CreatorDashboard() {
           </span>
         </div>
         <button
-          className="btn-primary mt-3"
+          className="btn-primary mt-3 w-full md:w-auto"
           disabled={!!loading}
           onClick={() => run("save snapshot", saveCurrentSnapshot)}
         >

@@ -2,18 +2,18 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-16">
-      <section className="grid gap-6 rounded-3xl border border-black/10 bg-white/75 p-8 shadow-sm backdrop-blur md:grid-cols-[1.25fr_1fr] md:p-12">
+    <main className="mx-auto min-h-screen max-w-6xl px-4 py-12 md:px-6 md:py-16">
+      <section className="grid gap-6 rounded-3xl border border-black/10 bg-white/75 p-6 shadow-sm backdrop-blur md:grid-cols-[1.25fr_1fr] md:p-12">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-black/65">YTCurious</p>
-          <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
+          <h1 className="mt-4 text-3xl font-semibold leading-tight md:text-5xl">
             Ship more YouTube videos with better packaging before you hit record
           </h1>
           <p className="mt-4 max-w-xl text-base text-black/75 md:text-lg">
             Turn one niche prompt into title angles, thumbnail directions, question-chain planning, retention beats, and
             risk-checked creative briefs.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
             <Link href="/app" className="btn-primary">
               Open Creator Dashboard
             </Link>
