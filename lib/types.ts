@@ -69,6 +69,8 @@ export type WorkspaceSnapshotPayload = {
   preFirst15sHook: string;
   targetDurationMin: number;
   questionChain: string[];
+  bestRiskScore?: number;
+  winningPackage?: ScoredPackage | null;
   ideas: IdeaCard[];
   selectedIdea: IdeaCard | null;
   packages: ScoredPackage[];

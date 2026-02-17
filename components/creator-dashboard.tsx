@@ -37,6 +37,8 @@ export function CreatorDashboard() {
   const [preFirst15sHook, setPreFirst15sHook] = useState("");
   const [targetDurationMin, setTargetDurationMin] = useState(8);
   const [questionChain, setQuestionChain] = useState<string[]>([]);
+  const [bestRiskScore, setBestRiskScore] = useState<number | null>(null);
+  const [winningPackage, setWinningPackage] = useState<ScoredPackage | null>(null);
   const [snapshots, setSnapshots] = useState<WorkspaceSnapshot[]>([]);
   const [storageProvider, setStorageProvider] = useState<"justjson" | "local">("local");
   const [aiStatus, setAiStatus] = useState("Browser AI not loaded");
@@ -91,6 +93,15 @@ export function CreatorDashboard() {
     });
   }, []);
 
+  useEffect(() => {
+    if (packages.length === 0) {
+      return;
+    }
+    if (bestRiskScore === null || emptyViewsAssessment.riskScore < bestRiskScore) {
+      setBestRiskScore(emptyViewsAssessment.riskScore);
+    }
+  }, [emptyViewsAssessment.riskScore, packages, bestRiskScore]);
+
   const saveCurrentSnapshot = async () => {
     const result = await saveWorkspaceSnapshot({
       channelId,
@@ -100,6 +111,8 @@ export function CreatorDashboard() {
       preFirst15sHook,
       targetDurationMin,
       questionChain,
+      bestRiskScore: bestRiskScore ?? undefined,
+      winningPackage,
       ideas,
       selectedIdea,
       packages,
@@ -119,6 +132,8 @@ export function CreatorDashboard() {
     setPreFirst15sHook(snapshot.payload.preFirst15sHook);
     setTargetDurationMin(snapshot.payload.targetDurationMin);
     setQuestionChain(snapshot.payload.questionChain);
+    setBestRiskScore(snapshot.payload.bestRiskScore ?? null);
+    setWinningPackage(snapshot.payload.winningPackage ?? null);
     setIdeas(snapshot.payload.ideas);
     setSelectedIdea(snapshot.payload.selectedIdea);
     setPackages(snapshot.payload.packages);
@@ -403,12 +418,27 @@ export function CreatorDashboard() {
                 ];
                 const rescored = scorePackaging(nextTitles, nextThumbs);
                 setPackages(rescored);
-                const afterAssessment = assessEmptyViewsRisk(rescored[0] ?? null, fixed.nextHook, fixed.nextQuestionChain);
-                setRiskDelta({ before: beforeRisk, after: afterAssessment.riskScore });
+              const afterAssessment = assessEmptyViewsRisk(rescored[0] ?? null, fixed.nextHook, fixed.nextQuestionChain);
+              setRiskDelta({ before: beforeRisk, after: afterAssessment.riskScore });
+            })
+          }
+          >
+            Apply Fixes
+          </button>
+          <button
+            className="rounded border border-emerald-700 px-3 py-1 text-sm font-semibold text-emerald-700 disabled:opacity-60"
+            disabled={!packages[0] || !!loading}
+            onClick={() =>
+              run("save winning package", async () => {
+                if (!packages[0]) {
+                  return;
+                }
+                setWinningPackage(packages[0]);
+                setBestRiskScore(emptyViewsAssessment.riskScore);
               })
             }
           >
-            Apply Fixes
+            Save as Winning Package
           </button>
         </div>
         <p className="mt-3 text-sm font-medium">Why this score</p>
@@ -428,6 +458,14 @@ export function CreatorDashboard() {
             Risk delta after last fix: {riskDelta.before.toFixed(1)} to {riskDelta.after.toFixed(1)} (
             {(riskDelta.before - riskDelta.after).toFixed(1)} improvement)
           </p>
+        ) : null}
+        {bestRiskScore !== null ? <p className="mt-2 text-sm">Best risk this session: {bestRiskScore.toFixed(1)}/10</p> : null}
+        {winningPackage ? (
+          <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm">
+            <p className="font-semibold">Winning Package</p>
+            <p className="mt-1">{winningPackage.title}</p>
+            <p className="text-xs text-black/70">Thumbnail: {winningPackage.thumbnailConcept}</p>
+          </div>
         ) : null}
       </section>
 

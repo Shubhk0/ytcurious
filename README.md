@@ -88,6 +88,7 @@ This is reflected in `clickPotential`, `respectTime`, `giveMore`, and `curiosity
   - Flags click-heavy but low-payoff concepts and recommends fixes before production.
   - Includes one-click `Apply Fixes` for title angle, first-15s hook, and question chain.
   - Automatically re-scores and shows before/after risk delta after fixes are applied.
+  - Tracks best session risk score and supports `Save as Winning Package`.
 
 ## Free storage on GitHub Pages (no keys required)
 This app supports cloud persistence using JustJSON (free, no signup) and automatically falls back to browser localStorage if the API is unavailable.
