@@ -9,10 +9,7 @@ const nextConfig = {
     unoptimized: true
   },
   basePath,
-  assetPrefix: basePath ? `${basePath}/` : undefined,
-  experimental: {
-    typedRoutes: true
-  }
+  assetPrefix: basePath || undefined
 };
 
 export default nextConfig;
