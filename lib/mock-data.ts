@@ -1,4 +1,13 @@
-import type { CreativeBrief, EmptyViewsAssessment, IdeaCard, LearningInsight, ScoredPackage, ShotPlanStep } from "@/lib/types";
+import type {
+  CreativeBrief,
+  EmptyViewsAssessment,
+  IdeaCard,
+  LearningInsight,
+  NichePlaybook,
+  PackagePerformanceLog,
+  ScoredPackage,
+  ShotPlanStep
+} from "@/lib/types";
 
 const randomId = () => Math.random().toString(36).slice(2, 10);
 
@@ -318,4 +327,200 @@ export function applyEmptyViewsFixes(
   }
 
   return { nextTitleAngle, nextHook, nextQuestionChain };
+}
+
+const PLAYBOOKS: NichePlaybook[] = [
+  {
+    id: "shorts",
+    label: "Shorts",
+    defaultDurationMin: 1,
+    hookFormula: "Start with the payoff in first 1-2 seconds, then reveal the method.",
+    thumbnailFormula: "One bold object + 2-4 word outcome text.",
+    questionChain: [
+      "What fast outcome can viewer copy in 60 seconds?",
+      "What common mistake wastes time?",
+      "What exact step fixes it?"
+    ],
+    scriptTemplate: [
+      "Payoff first: show end result in 2 seconds.",
+      "Call out the mistake most viewers make.",
+      "Show the one-step fix with proof.",
+      "Close with a direct copy-now CTA."
+    ]
+  },
+  {
+    id: "talking-head",
+    label: "Talking Head",
+    defaultDurationMin: 9,
+    hookFormula: "Problem + stakes + measured promise in first 15 seconds.",
+    thumbnailFormula: "Face reaction + single metric delta.",
+    questionChain: [
+      "What high-stakes problem does this solve?",
+      "Why does common advice fail?",
+      "What new framework is tested?",
+      "What measurable result proves it?"
+    ],
+    scriptTemplate: [
+      "Open with stakes and result target.",
+      "Explain failed baseline approach quickly.",
+      "Introduce and run new method.",
+      "Show proof with numbers and clips.",
+      "Summarize what viewer should copy."
+    ]
+  },
+  {
+    id: "faceless",
+    label: "Faceless",
+    defaultDurationMin: 8,
+    hookFormula: "Curiosity question + immediate visual proof.",
+    thumbnailFormula: "Object/screenshot contrast + clear before/after.",
+    questionChain: [
+      "What result are we trying to prove?",
+      "What setup constraints matter?",
+      "What evidence confirms success?"
+    ],
+    scriptTemplate: [
+      "Show end-state montage with metric.",
+      "Narrate setup constraints and tools.",
+      "Run process in 3 concise phases.",
+      "Reveal final evidence and lesson."
+    ]
+  },
+  {
+    id: "education",
+    label: "Education",
+    defaultDurationMin: 10,
+    hookFormula: "Promise one specific skill and one common pitfall.",
+    thumbnailFormula: "Topic keyword + visual diagram or step count.",
+    questionChain: [
+      "What will viewer be able to do by the end?",
+      "Where do beginners get stuck?",
+      "What example makes this obvious?",
+      "How does viewer apply this today?"
+    ],
+    scriptTemplate: [
+      "State skill outcome and who this helps.",
+      "Break concept into 3 chunks.",
+      "Teach with one concrete example.",
+      "Recap with checklist and next step."
+    ]
+  },
+  {
+    id: "gaming",
+    label: "Gaming",
+    defaultDurationMin: 12,
+    hookFormula: "Challenge statement + unexpected rule twist.",
+    thumbnailFormula: "Character/action frame + challenge text.",
+    questionChain: [
+      "What challenge are we attempting?",
+      "What rule makes it hard?",
+      "What turning point changes outcome?",
+      "What did we learn for next run?"
+    ],
+    scriptTemplate: [
+      "Set challenge and custom rule.",
+      "Run first attempt with quick cuts.",
+      "Show failure and strategy adjustment.",
+      "Final run and scoreboard recap."
+    ]
+  }
+];
+
+export function listNichePlaybooks(): NichePlaybook[] {
+  return PLAYBOOKS;
+}
+
+export function getNichePlaybook(playbookId: string): NichePlaybook {
+  return PLAYBOOKS.find((p) => p.id === playbookId) ?? PLAYBOOKS[1];
+}
+
+export function buildNextVideoRecommendations(
+  logs: PackagePerformanceLog[],
+  emptyViewsRisk: EmptyViewsAssessment,
+  selectedHook: string
+): string[] {
+  const output: string[] = [];
+  if (logs.length === 0) {
+    return [
+      "Log at least 3 uploads (CTR + 30s retention) to unlock tailored recommendations.",
+      "Use one hook style for 3 videos in a row so results are comparable.",
+      "Track one packaging variable at a time (title OR thumbnail OR hook)."
+    ];
+  }
+
+  const avgCtr = logs.reduce((sum, item) => sum + item.ctrPercent, 0) / logs.length;
+  const avgRetention = logs.reduce((sum, item) => sum + item.retention30sPercent, 0) / logs.length;
+
+  if (avgCtr < 4.5) {
+    output.push("CTR is below 4.5%. Next upload: shorten title to <= 58 chars and move concrete outcome words to the front.");
+  } else {
+    output.push("CTR is healthy. Keep packaging style but test one stronger curiosity phrase in title first 40 characters.");
+  }
+
+  if (avgRetention < 45) {
+    output.push("30s retention is low. Open with final result first, then explain process. Remove any intro bumper.");
+  } else {
+    output.push("30s retention is solid. Add one extra proof beat around mid-video to lift overall watch time.");
+  }
+
+  if (emptyViewsRisk.riskScore >= 7) {
+    output.push("Empty-views risk remains high. Use the risk fixes section before scripting and keep a proof-focused question in chain.");
+  }
+
+  if (selectedHook.trim().length > 0) {
+    output.push(`Reuse this hook pattern with one variable change: "${selectedHook.slice(0, 90)}${selectedHook.length > 90 ? "..." : ""}"`);
+  }
+
+  return output.slice(0, 5);
+}
+
+export function buildExecutionMarkdown(input: {
+  niche: string;
+  playbookLabel: string;
+  selectedIdeaTitle: string;
+  selectedHook: string;
+  pickedPackage: ScoredPackage | null;
+  questionChain: string[];
+  shotPlan: ShotPlanStep[];
+  recommendations: string[];
+}): string {
+  const lines: string[] = [];
+  lines.push("# YTCurious Execution Pack");
+  lines.push("");
+  lines.push(`- Niche: ${input.niche || "Not set"}`);
+  lines.push(`- Playbook: ${input.playbookLabel}`);
+  lines.push(`- Idea: ${input.selectedIdeaTitle || "Not selected"}`);
+  lines.push(`- Hook: ${input.selectedHook || "Not selected"}`);
+  lines.push(
+    `- Package: ${input.pickedPackage ? `${input.pickedPackage.title} | ${input.pickedPackage.thumbnailConcept}` : "Not selected"}`
+  );
+  lines.push("");
+  lines.push("## Question Chain");
+  for (const q of input.questionChain) {
+    lines.push(`- ${q}`);
+  }
+  if (input.questionChain.length === 0) {
+    lines.push("- Not generated");
+  }
+  lines.push("");
+  lines.push("## Shot Plan");
+  for (const step of input.shotPlan) {
+    lines.push(`- ${step.beat}: ${step.objective}`);
+    lines.push(`  - Shot: ${step.primaryShot}`);
+    lines.push(`  - B-roll: ${step.bRoll}`);
+    lines.push(`  - Text: ${step.onScreenText}`);
+    lines.push(`  - Edit: ${step.editNote}`);
+  }
+  if (input.shotPlan.length === 0) {
+    lines.push("- Not generated");
+  }
+  lines.push("");
+  lines.push("## Next Video Recommendations");
+  for (const recommendation of input.recommendations) {
+    lines.push(`- ${recommendation}`);
+  }
+  if (input.recommendations.length === 0) {
+    lines.push("- No recommendations yet");
+  }
+  return lines.join("\n");
 }

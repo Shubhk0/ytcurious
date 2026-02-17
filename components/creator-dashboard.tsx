@@ -13,13 +13,17 @@ import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
 import {
   applyEmptyViewsFixes,
   assessEmptyViewsRisk,
+  buildExecutionMarkdown,
+  buildNextVideoRecommendations,
   buildQuestionChain,
   generateBrief,
   generateHookOptions,
   generateIdeaCards,
   generateShotPlan,
+  getNichePlaybook,
   ideaCardsFromTitles,
   ingestLearning,
+  listNichePlaybooks,
   scorePackaging
 } from "@/lib/mock-data";
 import type {
@@ -27,6 +31,7 @@ import type {
   EmptyViewsAssessment,
   IdeaCard,
   LearningInsight,
+  NichePlaybook,
   PackagePerformanceLog,
   ScoredPackage,
   ShotPlanStep,
@@ -70,6 +75,10 @@ export function CreatorDashboard() {
   const [ctrPercent, setCtrPercent] = useState(0);
   const [retention30sPercent, setRetention30sPercent] = useState(0);
   const [packagePerformanceLog, setPackagePerformanceLog] = useState<PackagePerformanceLog[]>([]);
+  const [playbooks] = useState<NichePlaybook[]>(listNichePlaybooks());
+  const [activePlaybookId, setActivePlaybookId] = useState("talking-head");
+  const [nextVideoRecommendations, setNextVideoRecommendations] = useState<string[]>([]);
+  const [exportMarkdown, setExportMarkdown] = useState("");
 
   const defaultTitles = useMemo(() => {
     if (!selectedIdea) {
@@ -110,6 +119,8 @@ export function CreatorDashboard() {
       avgRetention: Number((totalRetention / packagePerformanceLog.length).toFixed(2))
     };
   }, [packagePerformanceLog]);
+
+  const activePlaybook = useMemo(() => getNichePlaybook(activePlaybookId), [activePlaybookId]);
 
   const run = async (label: string, fn: () => Promise<void>) => {
     setError(null);
@@ -166,7 +177,10 @@ export function CreatorDashboard() {
       selectedHook,
       scriptDraft,
       shotPlan,
-      packagePerformanceLog
+      packagePerformanceLog,
+      activePlaybookId,
+      nextVideoRecommendations,
+      exportMarkdown
     });
     setStorageProvider(result.provider);
     setSnapshots((prev) => [result.snapshot, ...prev.filter((s) => s.id !== result.snapshot.id)].slice(0, 10));
@@ -193,6 +207,9 @@ export function CreatorDashboard() {
     setScriptDraft(snapshot.payload.scriptDraft ?? "");
     setShotPlan(snapshot.payload.shotPlan ?? []);
     setPackagePerformanceLog(snapshot.payload.packagePerformanceLog ?? []);
+    setActivePlaybookId(snapshot.payload.activePlaybookId ?? "talking-head");
+    setNextVideoRecommendations(snapshot.payload.nextVideoRecommendations ?? []);
+    setExportMarkdown(snapshot.payload.exportMarkdown ?? "");
     setSyncNote(`Restored snapshot ${new Date(snapshot.createdAt).toLocaleString()}`);
   };
 
@@ -203,6 +220,44 @@ export function CreatorDashboard() {
     if (pkg.score.giveMore >= 8) reasons.push("high proof/value signal");
     if (pkg.score.curiosityGap >= 8) reasons.push("good curiosity tension");
     return reasons.length > 0 ? reasons.join(", ") : "balanced fundamentals";
+  };
+
+  const applyPlaybook = (playbookId: string) => {
+    const playbook = getNichePlaybook(playbookId);
+    setActivePlaybookId(playbook.id);
+    setTargetDurationMin(playbook.defaultDurationMin);
+    setPreThumbnailConcept(playbook.thumbnailFormula);
+    setPreFirst15sHook(playbook.hookFormula);
+    setQuestionChain(playbook.questionChain);
+    setScriptDraft(playbook.scriptTemplate.join("\n"));
+  };
+
+  const buildExportPack = () => {
+    const markdown = buildExecutionMarkdown({
+      niche,
+      playbookLabel: activePlaybook.label,
+      selectedIdeaTitle: selectedIdea?.title ?? "",
+      selectedHook,
+      pickedPackage,
+      questionChain,
+      shotPlan,
+      recommendations: nextVideoRecommendations
+    });
+    setExportMarkdown(markdown);
+    return markdown;
+  };
+
+  const downloadExportPack = () => {
+    const markdown = exportMarkdown || buildExportPack();
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `ytcurious-execution-pack-${new Date().toISOString().slice(0, 10)}.md`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(objectUrl);
   };
 
   return (
@@ -330,6 +385,38 @@ export function CreatorDashboard() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="panel">
+        <h2 className="text-lg font-semibold">2.3 Niche Playbook</h2>
+        <p className="mt-2 text-xs text-black/70">Use a proven structure preset to skip blank-page setup and start with the right format constraints.</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm">Playbook</span>
+            <select
+              value={activePlaybookId}
+              onChange={(e) => setActivePlaybookId(e.target.value)}
+              className="input-base"
+            >
+              {playbooks.map((playbook) => (
+                <option key={playbook.id} value={playbook.id}>
+                  {playbook.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button className="btn-secondary w-full text-sm md:w-auto" onClick={() => applyPlaybook(activePlaybookId)}>
+              Apply Playbook
+            </button>
+          </div>
+        </div>
+        <div className="mt-3 rounded border border-black/10 bg-black/[0.02] p-3 text-sm">
+          <p className="font-medium">{activePlaybook.label} defaults</p>
+          <p className="mt-1 text-xs text-black/70">Duration: {activePlaybook.defaultDurationMin} min</p>
+          <p className="mt-1 text-xs text-black/70">Hook formula: {activePlaybook.hookFormula}</p>
+          <p className="mt-1 text-xs text-black/70">Thumbnail formula: {activePlaybook.thumbnailFormula}</p>
+        </div>
       </section>
 
       <section className="panel">
@@ -842,6 +929,26 @@ export function CreatorDashboard() {
             Avg performance from logged pairs: CTR {performanceSummary.avgCtr}% | 30s retention {performanceSummary.avgRetention}%
           </p>
         ) : null}
+        <div className="mt-3">
+          <button
+            className="btn-secondary text-sm"
+            onClick={() =>
+              setNextVideoRecommendations(
+                buildNextVideoRecommendations(packagePerformanceLog, emptyViewsAssessment, selectedHook)
+              )
+            }
+          >
+            Generate Next Video Recommendations
+          </button>
+          <ul className="mt-2 list-disc pl-5 text-sm">
+            {nextVideoRecommendations.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+            {nextVideoRecommendations.length === 0 ? (
+              <li className="text-black/60">No recommendations yet. Save performance and generate.</li>
+            ) : null}
+          </ul>
+        </div>
         <ul className="mt-3 grid gap-2">
           {packagePerformanceLog.slice(0, 5).map((item) => (
             <li key={item.id} className="rounded border border-black/10 p-3 text-sm">
@@ -894,6 +1001,29 @@ export function CreatorDashboard() {
           ))}
           {snapshots.length === 0 ? <li className="text-sm text-black/60">No saved snapshots yet.</li> : null}
         </ul>
+      </section>
+
+      <section className="panel">
+        <h2 className="text-lg font-semibold">8. Export Execution Pack</h2>
+        <p className="mt-2 text-xs text-black/70">Export one markdown file with hook, package, question chain, shot plan, and next-video recommendations.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button className="btn-secondary text-sm" onClick={buildExportPack}>
+            Build Export
+          </button>
+          <button className="btn-primary text-sm" onClick={downloadExportPack}>
+            Download .md
+          </button>
+        </div>
+        <label className="mt-3 flex flex-col gap-1">
+          <span className="text-xs">Preview</span>
+          <textarea
+            className="input-base font-mono text-xs"
+            rows={10}
+            value={exportMarkdown}
+            onChange={(e) => setExportMarkdown(e.target.value)}
+            placeholder="Build export to preview markdown here."
+          />
+        </label>
       </section>
 
       {loading ? <p className="text-sm text-black/70">Running: {loading}...</p> : null}

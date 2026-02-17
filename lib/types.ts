@@ -74,6 +74,16 @@ export type PackagePerformanceLog = {
   createdAt: string;
 };
 
+export type NichePlaybook = {
+  id: string;
+  label: string;
+  defaultDurationMin: number;
+  hookFormula: string;
+  thumbnailFormula: string;
+  questionChain: string[];
+  scriptTemplate: string[];
+};
+
 export type EmptyViewsAssessment = {
   riskScore: number;
   riskLabel: "Low" | "Medium" | "High";
@@ -102,6 +112,9 @@ export type WorkspaceSnapshotPayload = {
   scriptDraft?: string;
   shotPlan?: ShotPlanStep[];
   packagePerformanceLog?: PackagePerformanceLog[];
+  activePlaybookId?: string;
+  nextVideoRecommendations?: string[];
+  exportMarkdown?: string;
 };
 
 export type WorkspaceSnapshot = {
