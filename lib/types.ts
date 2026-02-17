@@ -21,6 +21,10 @@ export type PackageScore = {
   specificity: number;
   audienceFit: number;
   novelty: number;
+  clickPotential: number;
+  respectTime: number;
+  giveMore: number;
+  curiosityGap: number;
   total: number;
 };
 

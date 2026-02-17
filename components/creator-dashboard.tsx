@@ -210,6 +210,12 @@ export function CreatorDashboard() {
 
       <section className="panel">
         <h2 className="text-lg font-semibold">3. Packaging Lab</h2>
+        <div className="mt-3 rounded border border-black/10 bg-black/[0.02] p-3 text-xs">
+          <p className="font-semibold">Rules we score against</p>
+          <p>1) If they do not click, they do not watch.</p>
+          <p>2) Respect viewer time with clarity and pace.</p>
+          <p>3) Give more value than expected to build durable audience.</p>
+        </div>
         <button
           className="mt-3 rounded bg-black px-4 py-2 font-semibold text-white disabled:opacity-60"
           disabled={!!loading || !selectedIdea}
@@ -232,7 +238,16 @@ export function CreatorDashboard() {
               <p className="font-semibold">{p.title}</p>
               <p className="mt-1 text-sm">Thumbnail: {p.thumbnailConcept}</p>
               <p className="mt-2 text-sm">Score: {p.score.total}/10</p>
+              <p className="mt-1 text-xs text-black/70">
+                Click {p.score.clickPotential}/10 | Time {p.score.respectTime}/10 | Give More {p.score.giveMore}/10 |
+                Curiosity Gap {p.score.curiosityGap}/10
+              </p>
               <p className="mt-1 text-xs text-black/70">{p.rationale}</p>
+              <ul className="mt-2 list-disc pl-4 text-xs text-black/70">
+                {p.riskFlags.map((risk) => (
+                  <li key={risk}>{risk}</li>
+                ))}
+              </ul>
             </article>
           ))}
         </div>

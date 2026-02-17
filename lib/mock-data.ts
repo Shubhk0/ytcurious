@@ -49,19 +49,67 @@ function pickRelatedTerm(relatedTerms: string[], index: number): string {
 
 export function scorePackaging(titles: string[], thumbnailConcepts: string[]): ScoredPackage[] {
   return titles.slice(0, 5).map((title, idx) => {
+    const lower = title.toLowerCase();
+    const hasNumber = /\d/.test(title);
+    const hasQuestion = title.includes("?");
+    const hasOutcomeWord = /(results|tested|mistake|truth|secret|prove|challenge|failed|worked)/i.test(title);
+    const shortEnough = title.length <= 62;
+
     const clarity = 6 + (idx % 4);
     const curiosity = 7 + ((idx + 1) % 3);
     const specificity = 5 + (idx % 5);
     const audienceFit = 6 + ((idx + 2) % 4);
     const novelty = 5 + ((idx + 1) % 5);
-    const total = Number(((clarity + curiosity + specificity + audienceFit + novelty) / 5).toFixed(1));
+    const clickPotential = Math.min(10, 5 + (hasNumber ? 2 : 0) + (hasQuestion ? 1 : 0) + (hasOutcomeWord ? 2 : 0));
+    const respectTime = Math.min(10, 5 + (shortEnough ? 3 : 0) + (/30 days|7 days|in \d+/i.test(lower) ? 2 : 0));
+    const giveMore = Math.min(10, 4 + (/tracked|measured|before|after|results/i.test(lower) ? 4 : 0) + (hasNumber ? 2 : 0));
+    const curiosityGap = Math.min(10, 5 + (hasQuestion ? 3 : 0) + (/why|what|nobody|truth|secret/i.test(lower) ? 2 : 0));
+    const total = Number(
+      (
+        (clarity +
+          curiosity +
+          specificity +
+          audienceFit +
+          novelty +
+          clickPotential +
+          respectTime +
+          giveMore +
+          curiosityGap) /
+        9
+      ).toFixed(1)
+    );
+
+    const riskFlags: string[] = [];
+    if (!shortEnough) {
+      riskFlags.push("Title may be too long for fast decision clicks");
+    }
+    if (!hasQuestion && !hasOutcomeWord) {
+      riskFlags.push("Curiosity gap may be weak");
+    }
+    if (!/tested|results|measured|prove|challenge|before|after/i.test(lower)) {
+      riskFlags.push("Value proof may be unclear");
+    }
+    if (riskFlags.length === 0) {
+      riskFlags.push("Low obvious risk in packaging");
+    }
 
     return {
       title,
       thumbnailConcept: thumbnailConcepts[idx % thumbnailConcepts.length] ?? "Face reaction + bold visual delta",
-      score: { clarity, curiosity, specificity, audienceFit, novelty, total },
-      rationale: "Strong promise with a measurable transformation and visible stakes.",
-      riskFlags: idx % 2 === 0 ? ["Could be too broad for return viewers"] : ["Title may overpromise outcome"]
+      score: {
+        clarity,
+        curiosity,
+        specificity,
+        audienceFit,
+        novelty,
+        clickPotential,
+        respectTime,
+        giveMore,
+        curiosityGap,
+        total
+      },
+      rationale: "Scored against click intent, time respect, and clear value payoff to reduce empty-view risk.",
+      riskFlags
     };
   });
 }

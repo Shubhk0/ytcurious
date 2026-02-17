@@ -68,6 +68,15 @@ Notes:
 - Performance depends on user device/browser memory.
 - First run is slower due to model download.
 
+## Takeaway-based scoring update
+Packaging Lab now scores with additional dimensions inspired by creator strategy discussed in:
+- If they do not click, they do not watch.
+- Respect viewer time.
+- Give more than expected.
+- Maintain a clear curiosity gap.
+
+This is reflected in `clickPotential`, `respectTime`, `giveMore`, and `curiosityGap` scores.
+
 ## Free storage on GitHub Pages (no keys required)
 This app supports cloud persistence using JustJSON (free, no signup) and automatically falls back to browser localStorage if the API is unavailable.
 
