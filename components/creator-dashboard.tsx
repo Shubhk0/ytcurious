@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { generateBriefInBrowser, generateIdeaTitlesInBrowser, isBrowserAISupported, warmupBrowserAI } from "@/lib/browser-ai";
 import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
 import {
+  applyEmptyViewsFixes,
   assessEmptyViewsRisk,
   buildQuestionChain,
   generateBrief,
@@ -366,6 +367,29 @@ export function CreatorDashboard() {
           >
             {emptyViewsAssessment.riskLabel} Risk ({emptyViewsAssessment.riskScore}/10)
           </span>
+          <button
+            className="rounded border border-black px-3 py-1 text-sm font-semibold disabled:opacity-60"
+            disabled={!selectedIdea || !!loading}
+            onClick={() =>
+              run("apply risk fixes", async () => {
+                if (!selectedIdea) {
+                  return;
+                }
+                const fixed = applyEmptyViewsFixes(
+                  selectedIdea.title,
+                  preTitleAngle,
+                  preFirst15sHook,
+                  questionChain,
+                  emptyViewsAssessment
+                );
+                setPreTitleAngle(fixed.nextTitleAngle);
+                setPreFirst15sHook(fixed.nextHook);
+                setQuestionChain(fixed.nextQuestionChain);
+              })
+            }
+          >
+            Apply Fixes
+          </button>
         </div>
         <p className="mt-3 text-sm font-medium">Why this score</p>
         <ul className="mt-1 list-disc pl-5 text-sm">

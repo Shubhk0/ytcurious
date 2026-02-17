@@ -244,3 +244,39 @@ export function assessEmptyViewsRisk(
 
   return { riskScore, riskLabel, reasons, fixes };
 }
+
+export function applyEmptyViewsFixes(
+  selectedIdeaTitle: string,
+  titleAngle: string,
+  first15sHook: string,
+  questionChain: string[],
+  assessment: EmptyViewsAssessment
+): { nextTitleAngle: string; nextHook: string; nextQuestionChain: string[] } {
+  let nextTitleAngle = titleAngle.trim() || selectedIdeaTitle;
+  let nextHook = first15sHook.trim();
+  let nextQuestionChain = questionChain.length > 0 ? [...questionChain] : [];
+
+  const hasWeakPayoff = assessment.reasons.some((r) => /weaker value payoff|value proof/i.test(r));
+  if (hasWeakPayoff && !/result|prove|measured|before|after|tracked/i.test(nextTitleAngle)) {
+    nextTitleAngle = `${nextTitleAngle} (measured before/after results)`;
+  }
+
+  if (nextTitleAngle.length > 62) {
+    nextTitleAngle = nextTitleAngle.slice(0, 59).trimEnd() + "...";
+  }
+
+  const needsHookFix = assessment.reasons.some((r) => /hook is too vague|slower value delivery/i.test(r));
+  if (needsHookFix || nextHook.length < 25) {
+    nextHook = `In 15 seconds: the exact problem, why most fail, and the measurable result we hit in "${selectedIdeaTitle}".`;
+  }
+
+  if (nextQuestionChain.length < 4) {
+    nextQuestionChain = buildQuestionChain(selectedIdeaTitle);
+  }
+  const hasProofQuestion = nextQuestionChain.some((q) => /proof|result|measure|data/i.test(q));
+  if (!hasProofQuestion) {
+    nextQuestionChain.push("Q: What measurable proof confirms this worked?");
+  }
+
+  return { nextTitleAngle, nextHook, nextQuestionChain };
+}
