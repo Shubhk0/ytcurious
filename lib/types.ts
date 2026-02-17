@@ -48,3 +48,23 @@ export type LearningInsight = {
   confidence: number;
   actionForNextVideo: string;
 };
+
+export type WorkspaceSnapshotPayload = {
+  channelId: string;
+  niche: string;
+  ideas: IdeaCard[];
+  selectedIdea: IdeaCard | null;
+  packages: ScoredPackage[];
+  brief: CreativeBrief | null;
+  insights: LearningInsight[];
+  videoUrl: string;
+};
+
+export type WorkspaceSnapshot = {
+  id: string;
+  createdAt: string;
+  channelId: string;
+  niche: string;
+  topIdeaTitle: string;
+  payload: WorkspaceSnapshotPayload;
+};

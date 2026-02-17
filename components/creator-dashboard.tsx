@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
 import { generateBrief, generateIdeaCards, ingestLearning, scorePackaging } from "@/lib/mock-data";
-import type { CreativeBrief, IdeaCard, LearningInsight, ScoredPackage } from "@/lib/types";
+import type { CreativeBrief, IdeaCard, LearningInsight, ScoredPackage, WorkspaceSnapshot } from "@/lib/types";
+import { listWorkspaceSnapshots, saveWorkspaceSnapshot } from "@/lib/workspace-storage";
 
 export function CreatorDashboard() {
   const [channelId, setChannelId] = useState("UC-demo-channel");
@@ -21,6 +22,8 @@ export function CreatorDashboard() {
   const [relatedTerms, setRelatedTerms] = useState<string[]>([]);
   const [videoMeta, setVideoMeta] = useState<{ title: string; authorName: string; thumbnailUrl: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  const [snapshots, setSnapshots] = useState<WorkspaceSnapshot[]>([]);
+  const [storageProvider, setStorageProvider] = useState<"supabase" | "local">("local");
 
   const defaultTitles = useMemo(() => {
     if (!selectedIdea) {
@@ -51,6 +54,41 @@ export function CreatorDashboard() {
     } finally {
       setLoading(null);
     }
+  };
+
+  useEffect(() => {
+    void run("load snapshots", async () => {
+      const result = await listWorkspaceSnapshots(10);
+      setStorageProvider(result.provider);
+      setSnapshots(result.snapshots);
+    });
+  }, []);
+
+  const saveCurrentSnapshot = async () => {
+    const result = await saveWorkspaceSnapshot({
+      channelId,
+      niche,
+      ideas,
+      selectedIdea,
+      packages,
+      brief,
+      insights,
+      videoUrl
+    });
+    setStorageProvider(result.provider);
+    setSnapshots((prev) => [result.snapshot, ...prev.filter((s) => s.id !== result.snapshot.id)].slice(0, 10));
+  };
+
+  const restoreSnapshot = (snapshot: WorkspaceSnapshot) => {
+    setChannelId(snapshot.payload.channelId);
+    setNiche(snapshot.payload.niche);
+    setIdeas(snapshot.payload.ideas);
+    setSelectedIdea(snapshot.payload.selectedIdea);
+    setPackages(snapshot.payload.packages);
+    setBrief(snapshot.payload.brief);
+    setInsights(snapshot.payload.insights);
+    setVideoUrl(snapshot.payload.videoUrl);
+    setSyncNote(`Restored snapshot ${new Date(snapshot.createdAt).toLocaleString()}`);
   };
 
   return (
@@ -238,6 +276,39 @@ export function CreatorDashboard() {
               <p className="mt-1 text-xs text-black/70">Next action: {insight.actionForNextVideo}</p>
             </li>
           ))}
+        </ul>
+      </section>
+
+      <section className="panel">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">6. Save and Restore</h2>
+          <span className="rounded bg-black/5 px-2 py-1 text-xs uppercase">
+            Storage: {storageProvider === "supabase" ? "Supabase" : "Local Browser"}
+          </span>
+        </div>
+        <button
+          className="mt-3 rounded bg-black px-4 py-2 font-semibold text-white disabled:opacity-60"
+          disabled={!!loading}
+          onClick={() => run("save snapshot", saveCurrentSnapshot)}
+        >
+          Save Current Workspace
+        </button>
+        <ul className="mt-4 grid gap-2">
+          {snapshots.map((snapshot) => (
+            <li key={snapshot.id} className="rounded border border-black/10 p-3 text-sm">
+              <p className="font-medium">{snapshot.topIdeaTitle}</p>
+              <p className="text-xs text-black/70">
+                {snapshot.niche} | {new Date(snapshot.createdAt).toLocaleString()}
+              </p>
+              <button
+                className="mt-2 rounded border border-black/20 px-3 py-1 text-xs font-semibold hover:bg-black/5"
+                onClick={() => restoreSnapshot(snapshot)}
+              >
+                Restore
+              </button>
+            </li>
+          ))}
+          {snapshots.length === 0 ? <li className="text-sm text-black/60">No saved snapshots yet.</li> : null}
         </ul>
       </section>
 
