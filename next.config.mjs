@@ -9,7 +9,14 @@ const nextConfig = {
     unoptimized: true
   },
   basePath,
-  assetPrefix: basePath || undefined
+  assetPrefix: basePath || undefined,
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      "onnxruntime-node$": false
+    };
+    return config;
+  }
 };
 
 export default nextConfig;

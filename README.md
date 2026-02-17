@@ -59,7 +59,8 @@ All calls are client-side with graceful fallback when an endpoint fails.
 
 ## Browser AI mode (no API key, no external rate limit)
 - The app now includes a browser-run LLM path via `@xenova/transformers`.
-- In the Idea Engine, use `Generate with Browser AI`.
+- In the Idea Engine, use `Warmup Browser AI` once, then `Generate with Browser AI`.
+- In Creative Brief, use `Brief with Browser AI` for local model output.
 - Model downloads once in browser and then uses browser cache.
 
 Notes:

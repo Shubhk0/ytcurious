@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { generateIdeaTitlesInBrowser } from "@/lib/browser-ai";
+import { generateBriefInBrowser, generateIdeaTitlesInBrowser, isBrowserAISupported, warmupBrowserAI } from "@/lib/browser-ai";
 import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
 import { generateBrief, generateIdeaCards, ideaCardsFromTitles, ingestLearning, scorePackaging } from "@/lib/mock-data";
 import type { CreativeBrief, IdeaCard, LearningInsight, ScoredPackage, WorkspaceSnapshot } from "@/lib/types";
@@ -26,6 +26,7 @@ export function CreatorDashboard() {
   const [snapshots, setSnapshots] = useState<WorkspaceSnapshot[]>([]);
   const [storageProvider, setStorageProvider] = useState<"justjson" | "local">("local");
   const [aiStatus, setAiStatus] = useState("Browser AI not loaded");
+  const [browserAISupported] = useState(isBrowserAISupported());
 
   const defaultTitles = useMemo(() => {
     if (!selectedIdea) {
@@ -150,8 +151,21 @@ export function CreatorDashboard() {
             Generate Ideas
           </button>
           <button
+            className="rounded border border-black px-4 py-2 text-sm font-semibold disabled:opacity-60"
+            disabled={!!loading || !browserAISupported}
+            onClick={() =>
+              run("browser ai warmup", async () => {
+                setAiStatus("Loading browser model (first run can take 20-60s)...");
+                await warmupBrowserAI();
+                setAiStatus("Browser AI ready");
+              })
+            }
+          >
+            Warmup Browser AI
+          </button>
+          <button
             className="rounded border border-ember px-4 py-2 font-semibold text-ember disabled:opacity-60"
-            disabled={!!loading}
+            disabled={!!loading || !browserAISupported}
             onClick={() =>
               run("browser ai ideas", async () => {
                 setAiStatus("Loading browser model (first run can take time)...");
@@ -168,7 +182,9 @@ export function CreatorDashboard() {
             Generate with Browser AI
           </button>
         </div>
-        <p className="mt-2 text-xs text-black/70">{aiStatus}</p>
+        <p className="mt-2 text-xs text-black/70">
+          {browserAISupported ? aiStatus : "Browser AI unavailable on this device/browser. Using standard generation."}
+        </p>
         {topicSummary ? (
           <p className="mt-3 rounded border border-black/10 bg-black/[0.02] p-3 text-sm">
             <span className="font-medium">Topic context:</span> {topicSummary}
@@ -239,6 +255,24 @@ export function CreatorDashboard() {
           }
         >
           Generate Brief
+        </button>
+        <button
+          className="ml-3 mt-3 rounded border border-moss px-4 py-2 font-semibold text-moss disabled:opacity-60"
+          disabled={!!loading || !selectedIdea || packages.length === 0 || !browserAISupported}
+          onClick={() =>
+            run("browser ai brief", async () => {
+              if (!selectedIdea || packages.length === 0) {
+                return;
+              }
+              setAiStatus("Generating brief with browser AI...");
+              const top = packages[0];
+              const nextBrief = await generateBriefInBrowser(selectedIdea.title, `${top.title} | ${top.thumbnailConcept}`);
+              setBrief(nextBrief);
+              setAiStatus("Browser AI ready");
+            })
+          }
+        >
+          Brief with Browser AI
         </button>
         {brief ? (
           <div className="mt-4 rounded border border-black/10 p-3 text-sm">
