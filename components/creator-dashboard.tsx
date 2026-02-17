@@ -41,6 +41,7 @@ export function CreatorDashboard() {
   const [storageProvider, setStorageProvider] = useState<"justjson" | "local">("local");
   const [aiStatus, setAiStatus] = useState("Browser AI not loaded");
   const [browserAISupported] = useState(isBrowserAISupported());
+  const [riskDelta, setRiskDelta] = useState<{ before: number; after: number } | null>(null);
 
   const defaultTitles = useMemo(() => {
     if (!selectedIdea) {
@@ -375,6 +376,7 @@ export function CreatorDashboard() {
                 if (!selectedIdea) {
                   return;
                 }
+                const beforeRisk = emptyViewsAssessment.riskScore;
                 const fixed = applyEmptyViewsFixes(
                   selectedIdea.title,
                   preTitleAngle,
@@ -385,6 +387,24 @@ export function CreatorDashboard() {
                 setPreTitleAngle(fixed.nextTitleAngle);
                 setPreFirst15sHook(fixed.nextHook);
                 setQuestionChain(fixed.nextQuestionChain);
+
+                // Re-score immediately so users can see impact of one-click fixes.
+                const nextTitles = [
+                  fixed.nextTitleAngle.trim() || selectedIdea.title,
+                  `${selectedIdea.title} (I tracked every result)`,
+                  `I tested if "${selectedIdea.title}" actually works`,
+                  `Most creators fail at this: ${selectedIdea.title}`,
+                  `${selectedIdea.title} - what nobody tells beginners`
+                ];
+                const nextThumbs = [
+                  preThumbnailConcept.trim() || "Before/After split with timer",
+                  "Face reaction + one bold metric",
+                  "Mistake crossed out + simple fix arrow"
+                ];
+                const rescored = scorePackaging(nextTitles, nextThumbs);
+                setPackages(rescored);
+                const afterAssessment = assessEmptyViewsRisk(rescored[0] ?? null, fixed.nextHook, fixed.nextQuestionChain);
+                setRiskDelta({ before: beforeRisk, after: afterAssessment.riskScore });
               })
             }
           >
@@ -403,6 +423,12 @@ export function CreatorDashboard() {
             <li key={fix}>{fix}</li>
           ))}
         </ul>
+        {riskDelta ? (
+          <p className="mt-3 text-sm font-medium">
+            Risk delta after last fix: {riskDelta.before.toFixed(1)} to {riskDelta.after.toFixed(1)} (
+            {(riskDelta.before - riskDelta.after).toFixed(1)} improvement)
+          </p>
+        ) : null}
       </section>
 
       <section className="panel">
