@@ -33,6 +33,13 @@ body {
     linear-gradient(180deg, var(--bg-1), var(--bg-0));
 }
 
+.dark body {
+  background:
+    radial-gradient(1200px 520px at 110% -10%, rgba(66, 178, 140, 0.16) 0%, transparent 65%),
+    radial-gradient(900px 420px at -10% 0%, rgba(255, 138, 77, 0.14) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-1), var(--bg-0));
+}
+
 h1,
 h2,
 h3 {
@@ -98,6 +105,31 @@ h3 {
 }
 
 .dark .text-black\/70,
+.dark .text-black\/65,
 .dark .text-black\/60 {
   color: rgba(233, 239, 246, 0.72) !important;
+}
+
+.dark .text-black\/75 {
+  color: rgba(233, 239, 246, 0.82) !important;
+}
+
+.dark .text-black {
+  color: var(--ink) !important;
+}
+
+.dark .bg-black\/5 {
+  background-color: rgba(233, 239, 246, 0.08) !important;
+}
+
+.dark .bg-black\/\[0\.02\] {
+  background-color: rgba(233, 239, 246, 0.07) !important;
+}
+
+.dark .hover\:bg-black\/\[0\.03\]:hover {
+  background-color: rgba(233, 239, 246, 0.1) !important;
+}
+
+.dark .text-red-700 {
+  color: #fecaca !important;
 }

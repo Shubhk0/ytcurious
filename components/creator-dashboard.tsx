@@ -525,10 +525,10 @@ export function CreatorDashboard() {
           <span
             className={`rounded px-3 py-1 text-sm font-semibold ${
               emptyViewsAssessment.riskLabel === "High"
-                ? "bg-red-100 text-red-800"
+                ? "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200"
                 : emptyViewsAssessment.riskLabel === "Medium"
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-emerald-100 text-emerald-800"
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+                  : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
             }`}
           >
             {emptyViewsAssessment.riskLabel} Risk ({emptyViewsAssessment.riskScore}/10)
