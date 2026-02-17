@@ -22,6 +22,18 @@ export function generateIdeaCards(niche: string, relatedTerms: string[] = []): I
   }));
 }
 
+export function ideaCardsFromTitles(niche: string, titles: string[]): IdeaCard[] {
+  return titles.map((title, index) => ({
+    id: randomId(),
+    title,
+    coreAudience: `${niche} creators who want repeatable growth`,
+    promise: "Practical, testable actions with measurable outcomes.",
+    curiosityGap: "What changes if proven advice is applied with strict constraints?",
+    noveltyType: (["format", "angle", "collab", "challenge"] as const)[index % 4],
+    estimatedEffort: (["low", "medium", "high"] as const)[index % 3]
+  }));
+}
+
 function pickNicheVariant(niche: string, relatedTerms: string[], index: number): string {
   const term = relatedTerms[index % relatedTerms.length];
   if (!term) {

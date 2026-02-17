@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { generateIdeaTitlesInBrowser } from "@/lib/browser-ai";
 import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
-import { generateBrief, generateIdeaCards, ingestLearning, scorePackaging } from "@/lib/mock-data";
+import { generateBrief, generateIdeaCards, ideaCardsFromTitles, ingestLearning, scorePackaging } from "@/lib/mock-data";
 import type { CreativeBrief, IdeaCard, LearningInsight, ScoredPackage, WorkspaceSnapshot } from "@/lib/types";
 import { listWorkspaceSnapshots, saveWorkspaceSnapshot } from "@/lib/workspace-storage";
 
@@ -24,6 +25,7 @@ export function CreatorDashboard() {
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   const [snapshots, setSnapshots] = useState<WorkspaceSnapshot[]>([]);
   const [storageProvider, setStorageProvider] = useState<"justjson" | "local">("local");
+  const [aiStatus, setAiStatus] = useState("Browser AI not loaded");
 
   const defaultTitles = useMemo(() => {
     if (!selectedIdea) {
@@ -147,7 +149,26 @@ export function CreatorDashboard() {
           >
             Generate Ideas
           </button>
+          <button
+            className="rounded border border-ember px-4 py-2 font-semibold text-ember disabled:opacity-60"
+            disabled={!!loading}
+            onClick={() =>
+              run("browser ai ideas", async () => {
+                setAiStatus("Loading browser model (first run can take time)...");
+                const titles = await generateIdeaTitlesInBrowser(niche);
+                const nextIdeas = ideaCardsFromTitles(niche, titles);
+                setIdeas(nextIdeas);
+                setSelectedIdea(nextIdeas[0] ?? null);
+                setPackages([]);
+                setBrief(null);
+                setAiStatus("Browser AI ready");
+              })
+            }
+          >
+            Generate with Browser AI
+          </button>
         </div>
+        <p className="mt-2 text-xs text-black/70">{aiStatus}</p>
         {topicSummary ? (
           <p className="mt-3 rounded border border-black/10 bg-black/[0.02] p-3 text-sm">
             <span className="font-medium">Topic context:</span> {topicSummary}

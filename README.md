@@ -57,6 +57,16 @@ One-time repo settings to confirm:
 
 All calls are client-side with graceful fallback when an endpoint fails.
 
+## Browser AI mode (no API key, no external rate limit)
+- The app now includes a browser-run LLM path via `@xenova/transformers`.
+- In the Idea Engine, use `Generate with Browser AI`.
+- Model downloads once in browser and then uses browser cache.
+
+Notes:
+- No paid API and no backend required.
+- Performance depends on user device/browser memory.
+- First run is slower due to model download.
+
 ## Free storage on GitHub Pages (no keys required)
 This app supports cloud persistence using JustJSON (free, no signup) and automatically falls back to browser localStorage if the API is unavailable.
 
