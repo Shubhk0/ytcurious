@@ -99,6 +99,68 @@ function parseLines(raw: string, fallback: string[]): string[] {
   return deduped.length > 0 ? deduped : fallback;
 }
 
+export async function generateHooksInBrowser(selectedIdeaTitle: string): Promise<string[]> {
+  const fallback = [
+    `I used to waste weeks on ${selectedIdeaTitle} until this one change fixed it.`,
+    `Most creators miss this in ${selectedIdeaTitle}. Here is the faster play.`,
+    `I tested ${selectedIdeaTitle} and one result changed my entire workflow.`,
+    `Before your next upload, use this ${selectedIdeaTitle} checklist.`,
+    `If your views stall, this ${selectedIdeaTitle} fix is where to start.`
+  ];
+
+  if (!isBrowserAISupported()) {
+    return fallback;
+  }
+
+  const generator = await getGenerator();
+  const prompt = [
+    "Write 7 YouTube opening hooks.",
+    `Topic: ${selectedIdeaTitle}`,
+    "Style: short, specific, curiosity-driven, no clickbait.",
+    "Return one hook per line with no numbering."
+  ].join("\n");
+
+  const output = await generator(prompt, {
+    max_new_tokens: 200,
+    do_sample: true,
+    temperature: 0.85,
+    top_k: 50
+  });
+
+  const lines = parseLines(output?.[0]?.generated_text ?? "", fallback);
+  return uniqueStrings([...lines, ...fallback]).slice(0, 7);
+}
+
+export async function generateShotPlanInBrowser(selectedIdeaTitle: string): Promise<string[]> {
+  const fallback = [
+    "Open with the end result and metric.",
+    "Show the old workflow mistake.",
+    "Introduce the tested framework.",
+    "Run the framework in real conditions.",
+    "Reveal the result delta and takeaway."
+  ];
+
+  if (!isBrowserAISupported()) {
+    return fallback;
+  }
+
+  const generator = await getGenerator();
+  const prompt = [
+    "Create a concise 6-step YouTube shot plan.",
+    `Topic: ${selectedIdeaTitle}`,
+    "Return short lines, one step per line, no numbering."
+  ].join("\n");
+
+  const output = await generator(prompt, {
+    max_new_tokens: 170,
+    do_sample: true,
+    temperature: 0.8,
+    top_k: 40
+  });
+
+  return parseLines(output?.[0]?.generated_text ?? "", fallback).slice(0, 6);
+}
+
 export async function generateBriefInBrowser(
   selectedIdeaTitle: string,
   selectedPackaging: string,

@@ -54,6 +54,26 @@ export type LearningInsight = {
   actionForNextVideo: string;
 };
 
+export type ShotPlanStep = {
+  id: string;
+  beat: string;
+  objective: string;
+  primaryShot: string;
+  bRoll: string;
+  onScreenText: string;
+  editNote: string;
+};
+
+export type PackagePerformanceLog = {
+  id: string;
+  packageTitle: string;
+  thumbnailConcept: string;
+  selectedHook: string;
+  ctrPercent: number;
+  retention30sPercent: number;
+  createdAt: string;
+};
+
 export type EmptyViewsAssessment = {
   riskScore: number;
   riskLabel: "Low" | "Medium" | "High";
@@ -77,6 +97,11 @@ export type WorkspaceSnapshotPayload = {
   brief: CreativeBrief | null;
   insights: LearningInsight[];
   videoUrl: string;
+  hookOptions?: string[];
+  selectedHook?: string;
+  scriptDraft?: string;
+  shotPlan?: ShotPlanStep[];
+  packagePerformanceLog?: PackagePerformanceLog[];
 };
 
 export type WorkspaceSnapshot = {

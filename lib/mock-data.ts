@@ -1,4 +1,4 @@
-import type { CreativeBrief, EmptyViewsAssessment, IdeaCard, LearningInsight, ScoredPackage } from "@/lib/types";
+import type { CreativeBrief, EmptyViewsAssessment, IdeaCard, LearningInsight, ScoredPackage, ShotPlanStep } from "@/lib/types";
 
 const randomId = () => Math.random().toString(36).slice(2, 10);
 
@@ -31,6 +31,45 @@ export function ideaCardsFromTitles(niche: string, titles: string[]): IdeaCard[]
     curiosityGap: "What changes if proven advice is applied with strict constraints?",
     noveltyType: (["format", "angle", "collab", "challenge"] as const)[index % 4],
     estimatedEffort: (["low", "medium", "high"] as const)[index % 3]
+  }));
+}
+
+export function generateHookOptions(selectedIdeaTitle: string, audience = "creators who want faster growth"): string[] {
+  const title = selectedIdeaTitle.trim() || "this video";
+  return [
+    `I used to waste weeks on ${title} until this one change fixed it.`,
+    `If you are ${audience}, this ${title} framework can save your next upload.`,
+    `I tested ${title} in real conditions and one result surprised me.`,
+    `Most people try ${title} the wrong way. Here is what actually worked.`,
+    `Before you publish your next video, steal this ${title} checklist first.`
+  ];
+}
+
+export function generateShotPlan(scriptDraft: string, targetDurationMin: number): ShotPlanStep[] {
+  const clean = scriptDraft
+    .replace(/\r/g, "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  const lines = clean.length > 0
+    ? clean
+    : [
+        "State the problem and stakes in one sentence.",
+        "Show the common mistake.",
+        "Reveal your tested method.",
+        "Present results and what to copy."
+      ];
+
+  const maxSteps = Math.min(7, Math.max(4, Math.round(targetDurationMin / 2)));
+  return lines.slice(0, maxSteps).map((line, index) => ({
+    id: randomId(),
+    beat: `Beat ${index + 1}`,
+    objective: line,
+    primaryShot: index === 0 ? "A-roll close framing with direct eye-line" : "A-roll medium framing with movement",
+    bRoll: index % 2 === 0 ? "Screen capture with highlighted metric" : "Before/after visual cutaway",
+    onScreenText: index === 0 ? "The problem in 7 words" : `Proof point ${index + 1}`,
+    editNote: index === 0 ? "Open with jump-cut and no intro bumper" : "Trim pauses and add pattern interrupt at midpoint"
   }));
 }
 

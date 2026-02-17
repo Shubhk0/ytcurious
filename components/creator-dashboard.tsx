@@ -1,19 +1,37 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { generateBriefInBrowser, generateIdeaTitlesInBrowser, isBrowserAISupported, warmupBrowserAI } from "@/lib/browser-ai";
+import {
+  generateBriefInBrowser,
+  generateHooksInBrowser,
+  generateIdeaTitlesInBrowser,
+  generateShotPlanInBrowser,
+  isBrowserAISupported,
+  warmupBrowserAI
+} from "@/lib/browser-ai";
 import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
 import {
   applyEmptyViewsFixes,
   assessEmptyViewsRisk,
   buildQuestionChain,
   generateBrief,
+  generateHookOptions,
   generateIdeaCards,
+  generateShotPlan,
   ideaCardsFromTitles,
   ingestLearning,
   scorePackaging
 } from "@/lib/mock-data";
-import type { CreativeBrief, EmptyViewsAssessment, IdeaCard, LearningInsight, ScoredPackage, WorkspaceSnapshot } from "@/lib/types";
+import type {
+  CreativeBrief,
+  EmptyViewsAssessment,
+  IdeaCard,
+  LearningInsight,
+  PackagePerformanceLog,
+  ScoredPackage,
+  ShotPlanStep,
+  WorkspaceSnapshot
+} from "@/lib/types";
 import { listWorkspaceSnapshots, saveWorkspaceSnapshot } from "@/lib/workspace-storage";
 
 export function CreatorDashboard() {
@@ -44,6 +62,14 @@ export function CreatorDashboard() {
   const [aiStatus, setAiStatus] = useState("Browser AI not loaded");
   const [browserAISupported] = useState(isBrowserAISupported());
   const [riskDelta, setRiskDelta] = useState<{ before: number; after: number } | null>(null);
+  const [hookOptions, setHookOptions] = useState<string[]>([]);
+  const [selectedHook, setSelectedHook] = useState("");
+  const [scriptDraft, setScriptDraft] = useState("");
+  const [shotPlan, setShotPlan] = useState<ShotPlanStep[]>([]);
+  const [pickedPackageKey, setPickedPackageKey] = useState("");
+  const [ctrPercent, setCtrPercent] = useState(0);
+  const [retention30sPercent, setRetention30sPercent] = useState(0);
+  const [packagePerformanceLog, setPackagePerformanceLog] = useState<PackagePerformanceLog[]>([]);
 
   const defaultTitles = useMemo(() => {
     if (!selectedIdea) {
@@ -67,6 +93,23 @@ export function CreatorDashboard() {
     ],
     [preThumbnailConcept]
   );
+
+  const pickedPackage = useMemo(
+    () => packages.find((pkg) => `${pkg.title}__${pkg.thumbnailConcept}` === pickedPackageKey) ?? null,
+    [packages, pickedPackageKey]
+  );
+
+  const performanceSummary = useMemo(() => {
+    if (packagePerformanceLog.length === 0) {
+      return null;
+    }
+    const totalCtr = packagePerformanceLog.reduce((sum, item) => sum + item.ctrPercent, 0);
+    const totalRetention = packagePerformanceLog.reduce((sum, item) => sum + item.retention30sPercent, 0);
+    return {
+      avgCtr: Number((totalCtr / packagePerformanceLog.length).toFixed(2)),
+      avgRetention: Number((totalRetention / packagePerformanceLog.length).toFixed(2))
+    };
+  }, [packagePerformanceLog]);
 
   const run = async (label: string, fn: () => Promise<void>) => {
     setError(null);
@@ -118,7 +161,12 @@ export function CreatorDashboard() {
       packages,
       brief,
       insights,
-      videoUrl
+      videoUrl,
+      hookOptions,
+      selectedHook,
+      scriptDraft,
+      shotPlan,
+      packagePerformanceLog
     });
     setStorageProvider(result.provider);
     setSnapshots((prev) => [result.snapshot, ...prev.filter((s) => s.id !== result.snapshot.id)].slice(0, 10));
@@ -140,7 +188,21 @@ export function CreatorDashboard() {
     setBrief(snapshot.payload.brief);
     setInsights(snapshot.payload.insights);
     setVideoUrl(snapshot.payload.videoUrl);
+    setHookOptions(snapshot.payload.hookOptions ?? []);
+    setSelectedHook(snapshot.payload.selectedHook ?? "");
+    setScriptDraft(snapshot.payload.scriptDraft ?? "");
+    setShotPlan(snapshot.payload.shotPlan ?? []);
+    setPackagePerformanceLog(snapshot.payload.packagePerformanceLog ?? []);
     setSyncNote(`Restored snapshot ${new Date(snapshot.createdAt).toLocaleString()}`);
+  };
+
+  const explainPackage = (pkg: ScoredPackage) => {
+    const reasons: string[] = [];
+    if (pkg.score.clickPotential >= 8) reasons.push("strong click intent");
+    if (pkg.score.respectTime >= 8) reasons.push("clear time promise");
+    if (pkg.score.giveMore >= 8) reasons.push("high proof/value signal");
+    if (pkg.score.curiosityGap >= 8) reasons.push("good curiosity tension");
+    return reasons.length > 0 ? reasons.join(", ") : "balanced fundamentals";
   };
 
   return (
@@ -192,7 +254,11 @@ export function CreatorDashboard() {
                 const nextIdeas = generateIdeaCards(niche, intel.relatedTerms);
                 setIdeas(nextIdeas);
                 setSelectedIdea(nextIdeas[0] ?? null);
+                const nextHooks = nextIdeas[0] ? generateHookOptions(nextIdeas[0].title, nextIdeas[0].coreAudience) : [];
+                setHookOptions(nextHooks);
+                setSelectedHook(nextHooks[0] ?? "");
                 setPackages([]);
+                setPickedPackageKey("");
                 setBrief(null);
               })
             }
@@ -222,7 +288,11 @@ export function CreatorDashboard() {
                 const nextIdeas = ideaCardsFromTitles(niche, titles);
                 setIdeas(nextIdeas);
                 setSelectedIdea(nextIdeas[0] ?? null);
+                const nextHooks = nextIdeas[0] ? generateHookOptions(nextIdeas[0].title, nextIdeas[0].coreAudience) : [];
+                setHookOptions(nextHooks);
+                setSelectedHook(nextHooks[0] ?? "");
                 setPackages([]);
+                setPickedPackageKey("");
                 setBrief(null);
                 setAiStatus("Browser AI ready");
               })
@@ -247,7 +317,12 @@ export function CreatorDashboard() {
             <li key={idea.id}>
               <button
                 className={`w-full rounded-lg border px-3 py-2 text-left transition ${selectedIdea?.id === idea.id ? "border-moss bg-moss/10" : "border-black/10 bg-white hover:bg-black/[0.03]"}`}
-                onClick={() => setSelectedIdea(idea)}
+                onClick={() => {
+                  setSelectedIdea(idea);
+                  const nextHooks = generateHookOptions(idea.title, idea.coreAudience);
+                  setHookOptions(nextHooks);
+                  setSelectedHook(nextHooks[0] ?? "");
+                }}
               >
                 <p className="font-medium">{idea.title}</p>
                 <p className="text-xs text-black/70">{idea.coreAudience}</p>
@@ -325,6 +400,62 @@ export function CreatorDashboard() {
       </section>
 
       <section className="panel">
+        <h2 className="text-lg font-semibold">2.7 Hook Lab</h2>
+        <p className="mt-2 text-xs text-black/70">Generate and lock a hook before drafting to improve first-30-second retention.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            className="btn-secondary text-sm"
+            disabled={!selectedIdea || !!loading}
+            onClick={() =>
+              run("hooks", async () => {
+                if (!selectedIdea) {
+                  return;
+                }
+                const nextHooks = generateHookOptions(selectedIdea.title, selectedIdea.coreAudience);
+                setHookOptions(nextHooks);
+                setSelectedHook(nextHooks[0] ?? "");
+              })
+            }
+          >
+            Generate Hooks
+          </button>
+          <button
+            className="btn-secondary text-sm"
+            disabled={!selectedIdea || !!loading || !browserAISupported}
+            onClick={() =>
+              run("browser ai hooks", async () => {
+                if (!selectedIdea) {
+                  return;
+                }
+                setAiStatus("Generating hooks with browser AI...");
+                const nextHooks = await generateHooksInBrowser(selectedIdea.title);
+                setHookOptions(nextHooks);
+                setSelectedHook(nextHooks[0] ?? "");
+                setAiStatus("Browser AI ready");
+              })
+            }
+          >
+            Hooks with Browser AI
+          </button>
+        </div>
+        <ul className="mt-4 grid gap-2">
+          {hookOptions.map((hook) => (
+            <li key={hook}>
+              <button
+                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
+                  selectedHook === hook ? "border-moss bg-moss/10" : "border-black/10 bg-white hover:bg-black/[0.03]"
+                }`}
+                onClick={() => setSelectedHook(hook)}
+              >
+                {hook}
+              </button>
+            </li>
+          ))}
+          {hookOptions.length === 0 ? <li className="text-sm text-black/60">No hooks yet. Generate a set first.</li> : null}
+        </ul>
+      </section>
+
+      <section className="panel">
         <h2 className="text-lg font-semibold">3. Packaging Lab</h2>
         <div className="mt-3 rounded border border-black/10 bg-black/[0.02] p-3 text-xs">
           <p className="font-semibold">Rules we score against</p>
@@ -340,17 +471,24 @@ export function CreatorDashboard() {
               if (!selectedIdea) {
                 return;
               }
-              const scored = scorePackaging(defaultTitles, defaultThumbs);
-              setPackages(scored);
-              setBrief(null);
-            })
-          }
-        >
+                const scored = scorePackaging(defaultTitles, defaultThumbs);
+                setPackages(scored);
+                setPickedPackageKey(scored[0] ? `${scored[0].title}__${scored[0].thumbnailConcept}` : "");
+                setBrief(null);
+              })
+            }
+          >
           Score Packaging
         </button>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          {packages.map((p) => (
-            <article key={`${p.title}-${p.thumbnailConcept}`} className="rounded-xl border border-black/10 bg-white p-3 shadow-sm">
+          {packages.map((p) => {
+            const packageKey = `${p.title}__${p.thumbnailConcept}`;
+            const selected = packageKey === pickedPackageKey;
+            return (
+            <article
+              key={`${p.title}-${p.thumbnailConcept}`}
+              className={`rounded-xl border bg-white p-3 shadow-sm ${selected ? "border-moss" : "border-black/10"}`}
+            >
               <p className="font-semibold">{p.title}</p>
               <p className="mt-1 text-sm">Thumbnail: {p.thumbnailConcept}</p>
               <p className="mt-2 text-sm">Score: {p.score.total}/10</p>
@@ -364,9 +502,21 @@ export function CreatorDashboard() {
                   <li key={risk}>{risk}</li>
                 ))}
               </ul>
+              <p className="mt-2 text-xs text-black/70">Why this pair can win: {explainPackage(p)}</p>
+              <button className="btn-secondary mt-3 text-xs" onClick={() => setPickedPackageKey(packageKey)}>
+                {selected ? "Picked Pair" : "Pick this Pair"}
+              </button>
             </article>
-          ))}
+            );
+          })}
         </div>
+        {pickedPackage ? (
+          <div className="mt-4 rounded border border-black/10 bg-black/[0.02] p-3 text-sm">
+            <p className="font-semibold">Picked title + thumbnail pair</p>
+            <p className="mt-1">{pickedPackage.title}</p>
+            <p className="text-xs text-black/70">Thumbnail: {pickedPackage.thumbnailConcept}</p>
+          </div>
+        ) : null}
       </section>
 
       <section className="panel">
@@ -418,6 +568,7 @@ export function CreatorDashboard() {
                 ];
                 const rescored = scorePackaging(nextTitles, nextThumbs);
                 setPackages(rescored);
+              setPickedPackageKey(rescored[0] ? `${rescored[0].title}__${rescored[0].thumbnailConcept}` : "");
               const afterAssessment = assessEmptyViewsRisk(rescored[0] ?? null, fixed.nextHook, fixed.nextQuestionChain);
               setRiskDelta({ before: beforeRisk, after: afterAssessment.riskScore });
             })
@@ -542,7 +693,65 @@ export function CreatorDashboard() {
       </section>
 
       <section className="panel">
-        <h2 className="text-lg font-semibold">5. Learning Loop</h2>
+        <h2 className="text-lg font-semibold">5. Script to Shot Planner</h2>
+        <label className="mt-3 flex flex-col gap-1">
+          <span className="text-sm">Script draft (one beat per line)</span>
+          <textarea
+            value={scriptDraft}
+            onChange={(e) => setScriptDraft(e.target.value)}
+            rows={6}
+            className="input-base"
+            placeholder="Hook line&#10;Problem + stakes&#10;Method&#10;Proof&#10;CTA"
+          />
+        </label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            className="btn-primary text-sm"
+            disabled={!!loading}
+            onClick={() =>
+              run("shot plan", async () => {
+                const nextPlan = generateShotPlan(scriptDraft, targetDurationMin);
+                setShotPlan(nextPlan);
+              })
+            }
+          >
+            Build Shot Plan
+          </button>
+          <button
+            className="btn-secondary text-sm"
+            disabled={!!loading || !browserAISupported || !selectedIdea}
+            onClick={() =>
+              run("browser ai shot plan", async () => {
+                if (!selectedIdea) {
+                  return;
+                }
+                setAiStatus("Generating shot plan with browser AI...");
+                const lines = await generateShotPlanInBrowser(selectedIdea.title);
+                setShotPlan(generateShotPlan(lines.join("\n"), targetDurationMin));
+                setAiStatus("Browser AI ready");
+              })
+            }
+          >
+            Shot Plan with Browser AI
+          </button>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {shotPlan.map((step) => (
+            <article key={step.id} className="rounded-xl border border-black/10 bg-white p-3 text-sm">
+              <p className="font-semibold">{step.beat}</p>
+              <p className="mt-1">{step.objective}</p>
+              <p className="mt-2 text-xs text-black/70">Primary shot: {step.primaryShot}</p>
+              <p className="text-xs text-black/70">B-roll: {step.bRoll}</p>
+              <p className="text-xs text-black/70">On-screen text: {step.onScreenText}</p>
+              <p className="text-xs text-black/70">Edit note: {step.editNote}</p>
+            </article>
+          ))}
+          {shotPlan.length === 0 ? <p className="text-sm text-black/60">No shot plan generated yet.</p> : null}
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2 className="text-lg font-semibold">6. Learning Loop</h2>
         <div className="mt-3 grid gap-3 md:flex md:flex-wrap md:items-end">
           <label className="flex w-full flex-col gap-1 md:min-w-96 md:flex-1">
             <span className="text-sm">Published video URL</span>
@@ -570,6 +779,57 @@ export function CreatorDashboard() {
             Ingest Learnings
           </button>
         </div>
+        <div className="mt-3 rounded border border-black/10 bg-black/[0.02] p-3 text-sm">
+          <p className="font-semibold">Pair Performance Logger</p>
+          <p className="mt-1 text-xs text-black/70">Log actual results for your picked title + thumbnail + hook to improve next suggestions.</p>
+          <div className="mt-2 grid gap-2 md:grid-cols-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs">CTR %</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={ctrPercent}
+                onChange={(e) => setCtrPercent(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                className="input-base"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs">30s retention %</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={retention30sPercent}
+                onChange={(e) => setRetention30sPercent(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                className="input-base"
+              />
+            </label>
+            <div className="flex items-end">
+              <button
+                className="btn-secondary w-full text-xs"
+                disabled={!pickedPackage || !selectedHook}
+                onClick={() => {
+                  if (!pickedPackage || !selectedHook) {
+                    return;
+                  }
+                  const nextLog: PackagePerformanceLog = {
+                    id: Math.random().toString(36).slice(2, 10),
+                    packageTitle: pickedPackage.title,
+                    thumbnailConcept: pickedPackage.thumbnailConcept,
+                    selectedHook,
+                    ctrPercent,
+                    retention30sPercent,
+                    createdAt: new Date().toISOString()
+                  };
+                  setPackagePerformanceLog((prev) => [nextLog, ...prev].slice(0, 20));
+                }}
+              >
+                Save Performance
+              </button>
+            </div>
+          </div>
+        </div>
         {videoMeta ? (
           <div className="mt-3 rounded border border-black/10 p-3 text-sm">
             <p className="font-medium">{videoMeta.title}</p>
@@ -577,6 +837,22 @@ export function CreatorDashboard() {
             <img src={videoMeta.thumbnailUrl} alt={videoMeta.title} className="mt-2 h-24 rounded object-cover" />
           </div>
         ) : null}
+        {performanceSummary ? (
+          <p className="mt-3 text-sm font-medium">
+            Avg performance from logged pairs: CTR {performanceSummary.avgCtr}% | 30s retention {performanceSummary.avgRetention}%
+          </p>
+        ) : null}
+        <ul className="mt-3 grid gap-2">
+          {packagePerformanceLog.slice(0, 5).map((item) => (
+            <li key={item.id} className="rounded border border-black/10 p-3 text-sm">
+              <p className="font-medium">{item.packageTitle}</p>
+              <p className="text-xs text-black/70">Hook: {item.selectedHook}</p>
+              <p className="text-xs text-black/70">
+                CTR {item.ctrPercent}% | 30s retention {item.retention30sPercent}% | {new Date(item.createdAt).toLocaleString()}
+              </p>
+            </li>
+          ))}
+        </ul>
         <ul className="mt-4 grid gap-2">
           {insights.map((insight) => (
             <li key={insight.id} className="rounded border border-black/10 p-3 text-sm">
@@ -589,7 +865,7 @@ export function CreatorDashboard() {
 
       <section className="panel">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">6. Save and Restore</h2>
+          <h2 className="text-lg font-semibold">7. Save and Restore</h2>
           <span className="rounded bg-black/5 px-2 py-1 text-xs uppercase">
             Storage: {storageProvider === "justjson" ? "JustJSON Cloud" : "Local Browser"}
           </span>
