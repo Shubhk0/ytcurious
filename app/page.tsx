@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function HomePage() {
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-4 flex justify-end">
+        <ThemeToggle />
+      </div>
       <section className="grid gap-6 rounded-3xl border border-black/10 bg-white/75 p-6 shadow-sm backdrop-blur md:grid-cols-[1.25fr_1fr] md:p-12">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-black/65">YTCurious</p>

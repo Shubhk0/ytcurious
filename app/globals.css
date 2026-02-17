@@ -13,6 +13,17 @@
   --accent-2: #0d5a40;
 }
 
+.dark {
+  color-scheme: dark;
+  --bg-0: #0f1419;
+  --bg-1: #111a22;
+  --ink: #e9eff6;
+  --ink-soft: rgba(233, 239, 246, 0.72);
+  --line: rgba(233, 239, 246, 0.18);
+  --accent: #ff8a4d;
+  --accent-2: #42b28c;
+}
+
 body {
   font-family: "Avenir Next", "Avenir", "Segoe UI", "Helvetica Neue", "Noto Sans", sans-serif;
   color: var(--ink);
@@ -33,6 +44,10 @@ h3 {
   border-color: var(--line);
 }
 
+.dark .panel {
+  background: rgba(24, 31, 40, 0.82);
+}
+
 .btn-primary {
   @apply rounded-lg px-4 py-2 font-semibold text-white transition disabled:opacity-60;
   background: linear-gradient(135deg, #ff5e00, #ff7e2f);
@@ -45,10 +60,15 @@ h3 {
   background: rgba(255, 255, 255, 0.85);
 }
 
+.dark .btn-secondary {
+  background: rgba(30, 38, 48, 0.9);
+}
+
 .input-base {
   @apply rounded-lg border px-3 py-2 outline-none transition;
   border-color: var(--line);
   background: rgba(255, 255, 255, 0.95);
+  color: var(--ink);
 }
 
 .input-base:focus {
@@ -62,4 +82,22 @@ h3 {
 
 .muted {
   color: var(--ink-soft);
+}
+
+.dark .bg-white {
+  background-color: rgba(22, 29, 37, 0.95) !important;
+}
+
+.dark .bg-white\/75,
+.dark .bg-white\/80 {
+  background-color: rgba(22, 29, 37, 0.82) !important;
+}
+
+.dark .border-black\/10 {
+  border-color: rgba(233, 239, 246, 0.16) !important;
+}
+
+.dark .text-black\/70,
+.dark .text-black\/60 {
+  color: rgba(233, 239, 246, 0.72) !important;
 }
