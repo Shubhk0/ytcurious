@@ -26,7 +26,7 @@ AI copilot MVP for YouTube creators focused on:
 1. Push this project to GitHub.
 2. In repo settings, enable Pages and set source to "GitHub Actions".
 3. Merge to `main`.
-4. Workflow `.github/workflows/deploy-pages.yml` will build and deploy `out/`.
+4. Workflow `.github/workflows/deploy-pages.yml` will build, deploy `out/`, and run a smoke check against the deployed URL.
 
 ## Autopilot mode
 - `.github/workflows/autopilot-updates.yml` runs every Monday at 06:00 UTC (and manually on demand).
