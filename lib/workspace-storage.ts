@@ -1,8 +1,10 @@
 import type { WorkspaceSnapshot, WorkspaceSnapshotPayload } from "@/lib/types";
 
 const STORAGE_KEY = "ytcurious.workspace.snapshots.v1";
+const JUSTJSON_COLLECTION_KEY = "ytcurious.justjson.collection.v1";
+const JUSTJSON_BASE_URL = "https://justjson.dev";
 
-type StorageProvider = "supabase" | "local";
+type StorageProvider = "justjson" | "local";
 
 type SaveResult = {
   provider: StorageProvider;
@@ -22,11 +24,8 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "";
-  const enabled = url.length > 0 && anonKey.length > 0;
-  return { enabled, url, anonKey };
+function getJustJsonPreferredCollection() {
+  return process.env.NEXT_PUBLIC_JUSTJSON_COLLECTION?.trim() ?? "";
 }
 
 function buildSnapshot(payload: WorkspaceSnapshotPayload): WorkspaceSnapshot {
@@ -75,93 +74,115 @@ async function listLocal(): Promise<ListResult> {
   return { provider: "local", snapshots: readLocalSnapshots() };
 }
 
-async function saveSupabase(payload: WorkspaceSnapshotPayload): Promise<SaveResult> {
-  const config = getSupabaseConfig();
-  const snapshot = buildSnapshot(payload);
-  const body = {
-    id: snapshot.id,
-    created_at: snapshot.createdAt,
-    channel_id: snapshot.channelId,
-    niche: snapshot.niche,
-    top_idea_title: snapshot.topIdeaTitle,
-    payload: snapshot.payload
-  };
-
-  const res = await fetch(`${config.url}/rest/v1/workspace_snapshots`, {
-    method: "POST",
-    headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${config.anonKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation"
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (!res.ok) {
-    throw new Error(`Supabase save failed (${res.status})`);
+function readJustJsonCollectionId(): string {
+  if (typeof window === "undefined") {
+    return "";
   }
-
-  return { provider: "supabase", snapshot };
+  const preferred = getJustJsonPreferredCollection();
+  if (preferred) {
+    return preferred;
+  }
+  return window.localStorage.getItem(JUSTJSON_COLLECTION_KEY) ?? "";
 }
 
-async function listSupabase(limit = 10): Promise<ListResult> {
-  const config = getSupabaseConfig();
-  const query =
-    "select=id,created_at,channel_id,niche,top_idea_title,payload&order=created_at.desc&limit=" + String(limit);
+function writeJustJsonCollectionId(collectionId: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (getJustJsonPreferredCollection()) {
+    return;
+  }
+  window.localStorage.setItem(JUSTJSON_COLLECTION_KEY, collectionId);
+}
 
-  const res = await fetch(`${config.url}/rest/v1/workspace_snapshots?${query}`, {
+async function createJustJsonCollection(): Promise<string> {
+  const response = await fetch(`${JUSTJSON_BASE_URL}/api/collections/`, {
+    method: "POST",
     headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${config.anonKey}`
-    }
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({})
   });
-
-  if (!res.ok) {
-    throw new Error(`Supabase load failed (${res.status})`);
+  if (!response.ok) {
+    throw new Error(`JustJSON create collection failed (${response.status})`);
   }
 
-  const rows = (await res.json()) as Array<{
-    id: string;
-    created_at: string;
-    channel_id: string;
-    niche: string;
-    top_idea_title: string;
-    payload: WorkspaceSnapshotPayload;
-  }>;
+  const body = (await response.json()) as {
+    collection_id?: string;
+    id?: string;
+    collectionId?: string;
+  };
+  const collectionId = body.collection_id ?? body.id ?? body.collectionId ?? "";
+  if (!collectionId) {
+    throw new Error("JustJSON returned no collection id.");
+  }
+  writeJustJsonCollectionId(collectionId);
+  return collectionId;
+}
 
-  const snapshots: WorkspaceSnapshot[] = rows.map((row) => ({
-    id: row.id,
-    createdAt: row.created_at,
-    channelId: row.channel_id,
-    niche: row.niche,
-    topIdeaTitle: row.top_idea_title,
-    payload: row.payload
-  }));
+async function ensureJustJsonCollectionId(): Promise<string> {
+  const existing = readJustJsonCollectionId();
+  if (existing) {
+    return existing;
+  }
+  return createJustJsonCollection();
+}
 
-  return { provider: "supabase", snapshots };
+async function saveJustJson(payload: WorkspaceSnapshotPayload): Promise<SaveResult> {
+  const snapshot = buildSnapshot(payload);
+  const collectionId = await ensureJustJsonCollectionId();
+  const response = await fetch(`${JUSTJSON_BASE_URL}/api/collections/${collectionId}/entries`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      id: snapshot.id,
+      data: snapshot
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`JustJSON save failed (${response.status})`);
+  }
+  return { provider: "justjson", snapshot };
+}
+
+async function listJustJson(limit = 10): Promise<ListResult> {
+  const collectionId = readJustJsonCollectionId();
+  if (!collectionId) {
+    return { provider: "justjson", snapshots: [] };
+  }
+
+  const response = await fetch(`${JUSTJSON_BASE_URL}/api/collections/${collectionId}/`);
+  if (!response.ok) {
+    throw new Error(`JustJSON list failed (${response.status})`);
+  }
+
+  const json = (await response.json()) as
+    | Array<{ id: string; data: WorkspaceSnapshot }>
+    | { entries?: Array<{ id: string; data: WorkspaceSnapshot }> };
+  const entries = Array.isArray(json) ? json : json.entries ?? [];
+  const snapshots = entries
+    .map((entry) => entry.data)
+    .filter(Boolean)
+    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
+    .slice(0, limit);
+
+  return { provider: "justjson", snapshots };
 }
 
 export async function saveWorkspaceSnapshot(payload: WorkspaceSnapshotPayload): Promise<SaveResult> {
-  const config = getSupabaseConfig();
-  if (config.enabled) {
-    try {
-      return await saveSupabase(payload);
-    } catch {
-      return saveLocal(payload);
-    }
+  try {
+    return await saveJustJson(payload);
+  } catch {
+    return saveLocal(payload);
   }
-  return saveLocal(payload);
 }
 
 export async function listWorkspaceSnapshots(limit = 10): Promise<ListResult> {
-  const config = getSupabaseConfig();
-  if (config.enabled) {
-    try {
-      return await listSupabase(limit);
-    } catch {
-      return listLocal();
-    }
+  try {
+    return await listJustJson(limit);
+  } catch {
+    return listLocal();
   }
-  return listLocal();
 }

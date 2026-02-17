@@ -23,7 +23,7 @@ export function CreatorDashboard() {
   const [videoMeta, setVideoMeta] = useState<{ title: string; authorName: string; thumbnailUrl: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
   const [snapshots, setSnapshots] = useState<WorkspaceSnapshot[]>([]);
-  const [storageProvider, setStorageProvider] = useState<"supabase" | "local">("local");
+  const [storageProvider, setStorageProvider] = useState<"justjson" | "local">("local");
 
   const defaultTitles = useMemo(() => {
     if (!selectedIdea) {
@@ -283,7 +283,7 @@ export function CreatorDashboard() {
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">6. Save and Restore</h2>
           <span className="rounded bg-black/5 px-2 py-1 text-xs uppercase">
-            Storage: {storageProvider === "supabase" ? "Supabase" : "Local Browser"}
+            Storage: {storageProvider === "justjson" ? "JustJSON Cloud" : "Local Browser"}
           </span>
         </div>
         <button
