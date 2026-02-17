@@ -40,6 +40,7 @@ export type CreativeBrief = {
   selectedIdeaTitle: string;
   selectedPackaging: string;
   hooks: string[];
+  questionChain: string[];
   beatOutline: string[];
   retentionCheckpoints: string[];
   visualProofPrompts: string[];
@@ -56,6 +57,11 @@ export type LearningInsight = {
 export type WorkspaceSnapshotPayload = {
   channelId: string;
   niche: string;
+  preTitleAngle: string;
+  preThumbnailConcept: string;
+  preFirst15sHook: string;
+  targetDurationMin: number;
+  questionChain: string[];
   ideas: IdeaCard[];
   selectedIdea: IdeaCard | null;
   packages: ScoredPackage[];

@@ -99,7 +99,12 @@ function parseLines(raw: string, fallback: string[]): string[] {
   return deduped.length > 0 ? deduped : fallback;
 }
 
-export async function generateBriefInBrowser(selectedIdeaTitle: string, selectedPackaging: string): Promise<CreativeBrief> {
+export async function generateBriefInBrowser(
+  selectedIdeaTitle: string,
+  selectedPackaging: string,
+  targetDurationMin = 8,
+  questionChain: string[] = []
+): Promise<CreativeBrief> {
   if (!isBrowserAISupported()) {
     return {
       selectedIdeaTitle,
@@ -109,6 +114,16 @@ export async function generateBriefInBrowser(selectedIdeaTitle: string, selected
         "State viewer pain and stakes.",
         "Preview one surprising result."
       ],
+      questionChain:
+        questionChain.length > 0
+          ? questionChain
+          : [
+              "Q1: What is the challenge?",
+              "Q2: Why does common advice fail?",
+              "Q3: What do we test instead?",
+              "Q4: What proof matters?",
+              "Q5: What should viewer apply?"
+            ],
       beatOutline: [
         "Set challenge and success metric",
         "Run first attempt",
@@ -118,8 +133,8 @@ export async function generateBriefInBrowser(selectedIdeaTitle: string, selected
       ],
       retentionCheckpoints: [
         "0:20 stakes",
-        "1:30 twist",
-        "3:00 reveal"
+        `${Math.max(1, Math.floor(targetDurationMin * 0.25))}:00 rehook`,
+        `${Math.max(2, Math.floor(targetDurationMin * 0.5))}:00 proof reveal`
       ],
       visualProofPrompts: [
         "Show before/after side by side",
@@ -182,6 +197,16 @@ export async function generateBriefInBrowser(selectedIdeaTitle: string, selected
     selectedIdeaTitle,
     selectedPackaging,
     hooks,
+    questionChain:
+      questionChain.length > 0
+        ? questionChain
+        : [
+            "Q1: What is the challenge?",
+            "Q2: Why does common advice fail?",
+            "Q3: What changed in this approach?",
+            "Q4: What proof matters most?",
+            "Q5: What can viewers copy now?"
+          ],
     beatOutline: beats,
     retentionCheckpoints: retention,
     visualProofPrompts: visuals,

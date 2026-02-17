@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { generateBriefInBrowser, generateIdeaTitlesInBrowser, isBrowserAISupported, warmupBrowserAI } from "@/lib/browser-ai";
 import { fetchTopicIntel, fetchYoutubeVideoMeta } from "@/lib/free-apis";
-import { generateBrief, generateIdeaCards, ideaCardsFromTitles, ingestLearning, scorePackaging } from "@/lib/mock-data";
+import {
+  buildQuestionChain,
+  generateBrief,
+  generateIdeaCards,
+  ideaCardsFromTitles,
+  ingestLearning,
+  scorePackaging
+} from "@/lib/mock-data";
 import type { CreativeBrief, IdeaCard, LearningInsight, ScoredPackage, WorkspaceSnapshot } from "@/lib/types";
 import { listWorkspaceSnapshots, saveWorkspaceSnapshot } from "@/lib/workspace-storage";
 
@@ -23,6 +30,11 @@ export function CreatorDashboard() {
   const [relatedTerms, setRelatedTerms] = useState<string[]>([]);
   const [videoMeta, setVideoMeta] = useState<{ title: string; authorName: string; thumbnailUrl: string } | null>(null);
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  const [preTitleAngle, setPreTitleAngle] = useState("");
+  const [preThumbnailConcept, setPreThumbnailConcept] = useState("");
+  const [preFirst15sHook, setPreFirst15sHook] = useState("");
+  const [targetDurationMin, setTargetDurationMin] = useState(8);
+  const [questionChain, setQuestionChain] = useState<string[]>([]);
   const [snapshots, setSnapshots] = useState<WorkspaceSnapshot[]>([]);
   const [storageProvider, setStorageProvider] = useState<"justjson" | "local">("local");
   const [aiStatus, setAiStatus] = useState("Browser AI not loaded");
@@ -32,20 +44,24 @@ export function CreatorDashboard() {
     if (!selectedIdea) {
       return [];
     }
-    return [
-      selectedIdea.title,
+    const generated = [
+      preTitleAngle.trim() || selectedIdea.title,
       `${selectedIdea.title} (I tracked every result)`,
       `I tested if "${selectedIdea.title}" actually works`,
       `Most creators fail at this: ${selectedIdea.title}`,
       `${selectedIdea.title} - what nobody tells beginners`
     ];
-  }, [selectedIdea]);
+    return generated;
+  }, [selectedIdea, preTitleAngle]);
 
-  const defaultThumbs = [
-    "Before/After split with timer",
-    "Face reaction + one bold metric",
-    "Mistake crossed out + simple fix arrow"
-  ];
+  const defaultThumbs = useMemo(
+    () => [
+      preThumbnailConcept.trim() || "Before/After split with timer",
+      "Face reaction + one bold metric",
+      "Mistake crossed out + simple fix arrow"
+    ],
+    [preThumbnailConcept]
+  );
 
   const run = async (label: string, fn: () => Promise<void>) => {
     setError(null);
@@ -71,6 +87,11 @@ export function CreatorDashboard() {
     const result = await saveWorkspaceSnapshot({
       channelId,
       niche,
+      preTitleAngle,
+      preThumbnailConcept,
+      preFirst15sHook,
+      targetDurationMin,
+      questionChain,
       ideas,
       selectedIdea,
       packages,
@@ -85,6 +106,11 @@ export function CreatorDashboard() {
   const restoreSnapshot = (snapshot: WorkspaceSnapshot) => {
     setChannelId(snapshot.payload.channelId);
     setNiche(snapshot.payload.niche);
+    setPreTitleAngle(snapshot.payload.preTitleAngle);
+    setPreThumbnailConcept(snapshot.payload.preThumbnailConcept);
+    setPreFirst15sHook(snapshot.payload.preFirst15sHook);
+    setTargetDurationMin(snapshot.payload.targetDurationMin);
+    setQuestionChain(snapshot.payload.questionChain);
     setIdeas(snapshot.payload.ideas);
     setSelectedIdea(snapshot.payload.selectedIdea);
     setPackages(snapshot.payload.packages);
@@ -209,6 +235,73 @@ export function CreatorDashboard() {
       </section>
 
       <section className="panel">
+        <h2 className="text-lg font-semibold">2.5 Pre-Packaging Board</h2>
+        <p className="mt-2 text-xs text-black/70">Lock packaging before production: angle, hook, and question chain.</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm">Title Angle</span>
+            <input
+              value={preTitleAngle}
+              onChange={(e) => setPreTitleAngle(e.target.value)}
+              placeholder="Example: I tested 30-day productivity systems"
+              className="rounded border border-black/15 px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm">Thumbnail Concept</span>
+            <input
+              value={preThumbnailConcept}
+              onChange={(e) => setPreThumbnailConcept(e.target.value)}
+              placeholder="Example: Before/After desk setup with timer"
+              className="rounded border border-black/15 px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1 md:col-span-2">
+            <span className="text-sm">First 15s Hook</span>
+            <input
+              value={preFirst15sHook}
+              onChange={(e) => setPreFirst15sHook(e.target.value)}
+              placeholder="Example: I wasted 6 hours/day until I tested this system."
+              className="rounded border border-black/15 px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm">Target Duration (minutes)</span>
+            <input
+              value={targetDurationMin}
+              type="number"
+              min={3}
+              max={60}
+              onChange={(e) => setTargetDurationMin(Math.max(3, Math.min(60, Number(e.target.value) || 8)))}
+              className="rounded border border-black/15 px-3 py-2"
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              className="rounded border border-black px-4 py-2 text-sm font-semibold"
+              disabled={!selectedIdea || !!loading}
+              onClick={() =>
+                run("question chain", async () => {
+                  if (!selectedIdea) {
+                    return;
+                  }
+                  setQuestionChain(buildQuestionChain(selectedIdea.title));
+                })
+              }
+            >
+              Build Question Chain
+            </button>
+          </div>
+        </div>
+        <ul className="mt-4 list-disc pl-5 text-sm">
+          {questionChain.map((q) => (
+            <li key={q}>{q}</li>
+          ))}
+          {questionChain.length === 0 ? <li className="text-black/60">No question chain yet.</li> : null}
+        </ul>
+      </section>
+
+      <section className="panel">
         <h2 className="text-lg font-semibold">3. Packaging Lab</h2>
         <div className="mt-3 rounded border border-black/10 bg-black/[0.02] p-3 text-xs">
           <p className="font-semibold">Rules we score against</p>
@@ -264,7 +357,12 @@ export function CreatorDashboard() {
                 return;
               }
               const top = packages[0];
-              const nextBrief = generateBrief(selectedIdea.title, `${top.title} | ${top.thumbnailConcept}`);
+              const nextBrief = generateBrief(
+                selectedIdea.title,
+                `${top.title} | ${top.thumbnailConcept}`,
+                targetDurationMin,
+                questionChain
+              );
               setBrief(nextBrief);
             })
           }
@@ -281,7 +379,12 @@ export function CreatorDashboard() {
               }
               setAiStatus("Generating brief with browser AI...");
               const top = packages[0];
-              const nextBrief = await generateBriefInBrowser(selectedIdea.title, `${top.title} | ${top.thumbnailConcept}`);
+              const nextBrief = await generateBriefInBrowser(
+                selectedIdea.title,
+                `${top.title} | ${top.thumbnailConcept}`,
+                targetDurationMin,
+                questionChain
+              );
               setBrief(nextBrief);
               setAiStatus("Browser AI ready");
             })
@@ -297,6 +400,18 @@ export function CreatorDashboard() {
             <ul className="list-disc pl-5">
               {brief.hooks.map((h) => (
                 <li key={h}>{h}</li>
+              ))}
+            </ul>
+            <p className="mt-3 font-medium">Question Chain</p>
+            <ul className="list-disc pl-5">
+              {brief.questionChain.map((q) => (
+                <li key={q}>{q}</li>
+              ))}
+            </ul>
+            <p className="mt-3 font-medium">Retention Beats</p>
+            <ul className="list-disc pl-5">
+              {brief.retentionCheckpoints.map((cp) => (
+                <li key={cp}>{cp}</li>
               ))}
             </ul>
           </div>

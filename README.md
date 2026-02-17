@@ -77,6 +77,14 @@ Packaging Lab now scores with additional dimensions inspired by creator strategy
 
 This is reflected in `clickPotential`, `respectTime`, `giveMore`, and `curiosityGap` scores.
 
+## New planning workflow additions
+- **Pre-Packaging Board**
+  - Lock title angle, thumbnail concept, first-15s hook, and target duration before packaging.
+- **Question Chain Planner**
+  - Build a sequence of viewer questions to preserve curiosity through the video.
+- **Retention Beat Checks**
+  - Brief now auto-generates time-based checkpoints from target duration.
+
 ## Free storage on GitHub Pages (no keys required)
 This app supports cloud persistence using JustJSON (free, no signup) and automatically falls back to browser localStorage if the API is unavailable.
 

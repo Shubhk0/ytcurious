@@ -114,7 +114,33 @@ export function scorePackaging(titles: string[], thumbnailConcepts: string[]): S
   });
 }
 
-export function generateBrief(selectedIdeaTitle: string, selectedPackaging: string): CreativeBrief {
+export function buildQuestionChain(selectedIdeaTitle: string): string[] {
+  return [
+    `Q1: What is the core challenge in "${selectedIdeaTitle}"?`,
+    "Q2: Why does the common approach fail?",
+    "Q3: What changed in our new approach?",
+    "Q4: What measurable proof shows it works?",
+    "Q5: How can viewers apply this immediately?"
+  ];
+}
+
+export function buildRetentionCheckpoints(targetDurationMin: number): string[] {
+  const durationSec = Math.max(120, Math.floor(targetDurationMin * 60));
+  const checkpointsSec = [20, Math.floor(durationSec * 0.25), Math.floor(durationSec * 0.5), Math.floor(durationSec * 0.75)];
+  return checkpointsSec.map((sec, idx) => {
+    const mm = Math.floor(sec / 60);
+    const ss = String(sec % 60).padStart(2, "0");
+    const label = ["stakes reminder", "rehook twist", "proof reveal", "final escalation"][idx] ?? "attention reset";
+    return `At ${mm}:${ss}: ${label}`;
+  });
+}
+
+export function generateBrief(
+  selectedIdeaTitle: string,
+  selectedPackaging: string,
+  targetDurationMin = 8,
+  questionChain: string[] = buildQuestionChain(selectedIdeaTitle)
+): CreativeBrief {
   return {
     selectedIdeaTitle,
     selectedPackaging,
@@ -123,6 +149,7 @@ export function generateBrief(selectedIdeaTitle: string, selectedPackaging: stri
       "State the viewer pain in one sentence and promise the experiment.",
       "Use a visual scoreboard that updates every segment."
     ],
+    questionChain,
     beatOutline: [
       "Set stakes and rules",
       "Run first attempt with friction",
@@ -131,12 +158,7 @@ export function generateBrief(selectedIdeaTitle: string, selectedPackaging: stri
       "Compare before/after outcome",
       "Deliver takeaway and next challenge"
     ],
-    retentionCheckpoints: [
-      "At 0:20: show what could be lost if strategy fails",
-      "At 1:45: add a mini-twist to reset attention",
-      "At 3:30: reveal surprising metric gap",
-      "At 5:00: commit to final high-risk attempt"
-    ],
+    retentionCheckpoints: buildRetentionCheckpoints(targetDurationMin),
     visualProofPrompts: [
       "Overlay side-by-side progress timeline",
       "Use receipts/screen captures as proof beats",
