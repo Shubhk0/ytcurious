@@ -144,7 +144,7 @@ export function CreatorDashboard() {
   };
 
   return (
-    <div className="mt-8 grid gap-5">
+    <div className="dashboard-grid">
       <section className="panel">
         <h2 className="text-lg font-semibold">1. Channel Sync</h2>
         <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -153,11 +153,11 @@ export function CreatorDashboard() {
             <input
               value={channelId}
               onChange={(e) => setChannelId(e.target.value)}
-              className="rounded border border-black/15 px-3 py-2"
+              className="input-base"
             />
           </label>
           <button
-            className="rounded bg-moss px-4 py-2 font-semibold text-white disabled:opacity-60"
+            className="btn-primary"
             disabled={!!loading}
             onClick={() =>
               run("sync", async () => {
@@ -171,7 +171,7 @@ export function CreatorDashboard() {
             Sync
           </button>
         </div>
-        <p className="mt-3 text-xs text-black/70">{syncNote}</p>
+        <p className="mt-3 text-xs muted">{syncNote}</p>
       </section>
 
       <section className="panel">
@@ -179,10 +179,10 @@ export function CreatorDashboard() {
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="flex min-w-72 flex-col gap-1">
             <span className="text-sm">Niche</span>
-            <input value={niche} onChange={(e) => setNiche(e.target.value)} className="rounded border border-black/15 px-3 py-2" />
+            <input value={niche} onChange={(e) => setNiche(e.target.value)} className="input-base" />
           </label>
           <button
-            className="rounded bg-ember px-4 py-2 font-semibold text-white disabled:opacity-60"
+            className="btn-primary"
             disabled={!!loading}
             onClick={() =>
               run("ideas", async () => {
@@ -200,7 +200,7 @@ export function CreatorDashboard() {
             Generate Ideas
           </button>
           <button
-            className="rounded border border-black px-4 py-2 text-sm font-semibold disabled:opacity-60"
+            className="btn-secondary text-sm"
             disabled={!!loading || !browserAISupported}
             onClick={() =>
               run("browser ai warmup", async () => {
@@ -213,7 +213,7 @@ export function CreatorDashboard() {
             Warmup Browser AI
           </button>
           <button
-            className="rounded border border-ember px-4 py-2 font-semibold text-ember disabled:opacity-60"
+            className="btn-secondary"
             disabled={!!loading || !browserAISupported}
             onClick={() =>
               run("browser ai ideas", async () => {
@@ -231,7 +231,7 @@ export function CreatorDashboard() {
             Generate with Browser AI
           </button>
         </div>
-        <p className="mt-2 text-xs text-black/70">
+        <p className="mt-2 text-xs muted">
           {browserAISupported ? aiStatus : "Browser AI unavailable on this device/browser. Using standard generation."}
         </p>
         {topicSummary ? (
@@ -240,13 +240,13 @@ export function CreatorDashboard() {
           </p>
         ) : null}
         {relatedTerms.length > 0 ? (
-          <p className="mt-2 text-xs text-black/70">Related terms from free APIs: {relatedTerms.join(", ")}</p>
+          <p className="mt-2 text-xs muted">Related terms from free APIs: {relatedTerms.join(", ")}</p>
         ) : null}
         <ul className="mt-4 grid gap-2">
           {ideas.map((idea) => (
             <li key={idea.id}>
               <button
-                className={`w-full rounded border px-3 py-2 text-left ${selectedIdea?.id === idea.id ? "border-moss bg-moss/10" : "border-black/10"}`}
+                className={`w-full rounded-lg border px-3 py-2 text-left transition ${selectedIdea?.id === idea.id ? "border-moss bg-moss/10" : "border-black/10 bg-white hover:bg-black/[0.03]"}`}
                 onClick={() => setSelectedIdea(idea)}
               >
                 <p className="font-medium">{idea.title}</p>
@@ -267,7 +267,7 @@ export function CreatorDashboard() {
               value={preTitleAngle}
               onChange={(e) => setPreTitleAngle(e.target.value)}
               placeholder="Example: I tested 30-day productivity systems"
-              className="rounded border border-black/15 px-3 py-2"
+              className="input-base"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -276,7 +276,7 @@ export function CreatorDashboard() {
               value={preThumbnailConcept}
               onChange={(e) => setPreThumbnailConcept(e.target.value)}
               placeholder="Example: Before/After desk setup with timer"
-              className="rounded border border-black/15 px-3 py-2"
+              className="input-base"
             />
           </label>
           <label className="flex flex-col gap-1 md:col-span-2">
@@ -285,7 +285,7 @@ export function CreatorDashboard() {
               value={preFirst15sHook}
               onChange={(e) => setPreFirst15sHook(e.target.value)}
               placeholder="Example: I wasted 6 hours/day until I tested this system."
-              className="rounded border border-black/15 px-3 py-2"
+              className="input-base"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -296,12 +296,12 @@ export function CreatorDashboard() {
               min={3}
               max={60}
               onChange={(e) => setTargetDurationMin(Math.max(3, Math.min(60, Number(e.target.value) || 8)))}
-              className="rounded border border-black/15 px-3 py-2"
+              className="input-base"
             />
           </label>
           <div className="flex items-end">
             <button
-              className="rounded border border-black px-4 py-2 text-sm font-semibold"
+              className="btn-secondary text-sm"
               disabled={!selectedIdea || !!loading}
               onClick={() =>
                 run("question chain", async () => {
@@ -333,7 +333,7 @@ export function CreatorDashboard() {
           <p>3) Give more value than expected to build durable audience.</p>
         </div>
         <button
-          className="mt-3 rounded bg-black px-4 py-2 font-semibold text-white disabled:opacity-60"
+          className="btn-primary mt-3"
           disabled={!!loading || !selectedIdea}
           onClick={() =>
             run("packaging", async () => {
@@ -350,7 +350,7 @@ export function CreatorDashboard() {
         </button>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {packages.map((p) => (
-            <article key={`${p.title}-${p.thumbnailConcept}`} className="rounded border border-black/10 p-3">
+            <article key={`${p.title}-${p.thumbnailConcept}`} className="rounded-xl border border-black/10 bg-white p-3 shadow-sm">
               <p className="font-semibold">{p.title}</p>
               <p className="mt-1 text-sm">Thumbnail: {p.thumbnailConcept}</p>
               <p className="mt-2 text-sm">Score: {p.score.total}/10</p>
@@ -384,7 +384,7 @@ export function CreatorDashboard() {
             {emptyViewsAssessment.riskLabel} Risk ({emptyViewsAssessment.riskScore}/10)
           </span>
           <button
-            className="rounded border border-black px-3 py-1 text-sm font-semibold disabled:opacity-60"
+            className="btn-secondary text-sm"
             disabled={!selectedIdea || !!loading}
             onClick={() =>
               run("apply risk fixes", async () => {
@@ -426,7 +426,7 @@ export function CreatorDashboard() {
             Apply Fixes
           </button>
           <button
-            className="rounded border border-emerald-700 px-3 py-1 text-sm font-semibold text-emerald-700 disabled:opacity-60"
+            className="btn-secondary text-sm"
             disabled={!packages[0] || !!loading}
             onClick={() =>
               run("save winning package", async () => {
@@ -472,7 +472,7 @@ export function CreatorDashboard() {
       <section className="panel">
         <h2 className="text-lg font-semibold">4. Creative Brief</h2>
         <button
-          className="mt-3 rounded bg-moss px-4 py-2 font-semibold text-white disabled:opacity-60"
+          className="btn-primary mt-3"
           disabled={!!loading || !selectedIdea || packages.length === 0}
           onClick={() =>
             run("brief", async () => {
@@ -493,7 +493,7 @@ export function CreatorDashboard() {
           Generate Brief
         </button>
         <button
-          className="ml-3 mt-3 rounded border border-moss px-4 py-2 font-semibold text-moss disabled:opacity-60"
+          className="btn-secondary ml-3 mt-3"
           disabled={!!loading || !selectedIdea || packages.length === 0 || !browserAISupported}
           onClick={() =>
             run("browser ai brief", async () => {
@@ -549,11 +549,11 @@ export function CreatorDashboard() {
             <input
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              className="rounded border border-black/15 px-3 py-2"
+              className="input-base"
             />
           </label>
           <button
-            className="rounded bg-ember px-4 py-2 font-semibold text-white disabled:opacity-60"
+            className="btn-primary"
             disabled={!!loading}
             onClick={() =>
               run("learning", async () => {
@@ -595,7 +595,7 @@ export function CreatorDashboard() {
           </span>
         </div>
         <button
-          className="mt-3 rounded bg-black px-4 py-2 font-semibold text-white disabled:opacity-60"
+          className="btn-primary mt-3"
           disabled={!!loading}
           onClick={() => run("save snapshot", saveCurrentSnapshot)}
         >
@@ -609,7 +609,7 @@ export function CreatorDashboard() {
                 {snapshot.niche} | {new Date(snapshot.createdAt).toLocaleString()}
               </p>
               <button
-                className="mt-2 rounded border border-black/20 px-3 py-1 text-xs font-semibold hover:bg-black/5"
+                className="btn-secondary mt-2 text-xs"
                 onClick={() => restoreSnapshot(snapshot)}
               >
                 Restore
